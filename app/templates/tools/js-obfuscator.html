@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% block title %}{{ t("tool.javascript.name") }}{% endblock %}
+{% block content %}
+<header class="page-head">
+  <div>
+    <p class="eyebrow">{{ t("tool.javascript.category") }}</p>
+    <h2>{{ t("tool.javascript.name") }}</h2>
+  </div>
+</header>
+
+{% if error %}<div class="alert">{{ error }}</div>{% endif %}
+<div class="alert" data-javascript-error hidden></div>
+
+<form class="tool-panel" method="post" data-javascript-tool data-live-url="{{ url_for('js_obfuscator.convert') }}">
+  <div class="split">
+    <label>
+      {{ t("javascript.source") }}
+      <textarea class="delimiter-textarea" name="text" rows="14" data-desktop-rows="14" data-mobile-rows="7" spellcheck="false" data-javascript-source>{{ form.text }}</textarea>
+    </label>
+    <label>
+      {{ t("common.result") }}
+      <textarea class="delimiter-textarea" rows="14" data-desktop-rows="14" data-mobile-rows="7" spellcheck="false" readonly data-javascript-result>{{ result }}</textarea>
+    </label>
+  </div>
+  <div class="mode-grid">
+    <label class="choice">
+      <input type="radio" name="mode" value="obfuscate" {% if form.mode != "deobfuscate" %}checked{% endif %}>
+      <span>
+        <strong>{{ t("javascript.obfuscate") }}</strong>
+        <small>{{ t("javascript.obfuscate_desc") }}</small>
+      </span>
+    </label>
+    <label class="choice">
+      <input type="radio" name="mode" value="deobfuscate" {% if form.mode == "deobfuscate" %}checked{% endif %}>
+      <span>
+        <strong>{{ t("javascript.deobfuscate") }}</strong>
+        <small>{{ t("javascript.deobfuscate_desc") }}</small>
+      </span>
+    </label>
+  </div>
+  <fieldset class="option-panel" data-javascript-options>
+    <legend><i data-lucide="settings"></i>{{ t("javascript.options") }}</legend>
+    <div class="switch-grid">
+      <label class="switch-row">
+        <input type="checkbox" name="compact" {% if form.compact %}checked{% endif %}>
+        <span class="switch-control"></span>
+        <strong>{{ t("javascript.compact") }}</strong>
+      </label>
+      <label class="switch-row">
+        <input type="checkbox" name="control_flow_flattening" {% if form.control_flow_flattening %}checked{% endif %}>
+        <span class="switch-control"></span>
+        <strong>{{ t("javascript.control_flow") }}</strong>
+      </label>
+      <label class="switch-row">
+        <input type="checkbox" name="string_array" {% if form.string_array %}checked{% endif %}>
+        <span class="switch-control"></span>
+        <strong>{{ t("javascript.string_array") }}</strong>
+      </label>
+      <label class="switch-row">
+        <input type="checkbox" name="self_defending" {% if form.self_defending %}checked{% endif %}>
+        <span class="switch-control"></span>
+        <strong>{{ t("javascript.self_defending") }}</strong>
+      </label>
+      <label class="switch-row">
+        <input type="checkbox" name="debug_protection" {% if form.debug_protection %}checked{% endif %}>
+        <span class="switch-control"></span>
+        <strong>{{ t("javascript.debug_protection") }}</strong>
+      </label>
+      <label class="switch-row">
+        <input type="checkbox" name="simplify" {% if form.simplify %}checked{% endif %}>
+        <span class="switch-control"></span>
+        <strong>{{ t("javascript.simplify") }}</strong>
+      </label>
+      <label class="switch-row">
+        <input type="checkbox" name="numbers_to_expressions" {% if form.numbers_to_expressions %}checked{% endif %}>
+        <span class="switch-control"></span>
+        <strong>{{ t("javascript.numbers_to_expressions") }}</strong>
+      </label>
+      <label class="switch-row">
+        <input type="checkbox" name="split_strings" {% if form.split_strings %}checked{% endif %}>
+        <span class="switch-control"></span>
+        <strong>{{ t("javascript.split_strings") }}</strong>
+      </label>
+    </div>
+    <div class="controls two">
+      <label>{{ t("javascript.string_array_threshold") }}
+        <input name="string_array_threshold" inputmode="decimal" value="{{ form.string_array_threshold }}">
+      </label>
+      <label>{{ t("javascript.control_flow_threshold") }}
+        <input name="control_flow_threshold" inputmode="decimal" value="{{ form.control_flow_threshold }}">
+      </label>
+      <label>{{ t("javascript.split_strings_chunk_length") }}
+        <input name="split_strings_chunk_length" inputmode="numeric" value="{{ form.split_strings_chunk_length }}">
+      </label>
+    </div>
+    <div class="checks">
+      <span class="encoding-label">{{ t("javascript.string_array_encoding") }}</span>
+      {% for value, key in [('none','javascript.encoding_none'),('base64','javascript.encoding_base64'),('rc4','javascript.encoding_rc4')] %}
+        <label><input type="radio" name="string_array_encoding" value="{{ value }}" {% if form.string_array_encoding == value %}checked{% endif %}> {{ t(key) }}</label>
+      {% endfor %}
+    </div>
+  </fieldset>
+</form>
+{% endblock %}

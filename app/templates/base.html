@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="{{ current_lang|default('en') }}" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}{{ t("app.title") }}{% endblock %}</title>
+  <link rel="shortcut icon" type="image/x-icon" href="{{ url_for('static', filename='img/favicon.ico') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@300..700&display=swap" rel="stylesheet">
+  <script>document.documentElement.dataset.theme = localStorage.getItem("theme") || "light";</script>
+</head>
+<body>
+  <div class="shell">
+    <aside class="sidebar">
+      <div class="sidebar-head">
+        <a class="brand" href="{{ url_for('dashboard.index') }}">
+          <span class="brand-mark">
+            <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Logo">
+          </span>
+          <span>
+            <strong>Devtools</strong>
+            <small>{{ t("app.subtitle") }}</small>
+          </span>
+        </a>
+        <div class="sidebar-actions">
+          <div class="lang-switch" aria-label="{{ t('language.label') }}">
+            <a href="{{ language_url('vi') }}" class="{% if current_lang == 'vi' %}active{% endif %}">{{ t("language.vi") }}</a>
+            <a href="{{ language_url('en') }}" class="{% if current_lang == 'en' %}active{% endif %}">{{ t("language.en") }}</a>
+          </div>
+          <button class="theme-toggle" type="button" data-theme-toggle aria-label="Switch color theme" data-label-light="{{ t('theme.light') }}" data-label-dark="{{ t('theme.dark') }}">
+            <i class="theme-icon theme-icon-light" data-lucide="sun"></i>
+            <i class="theme-icon theme-icon-dark" data-lucide="moon"></i>
+            <span class="visually-hidden" data-theme-label>{{ t("theme.light") }}</span>
+          </button>
+          <button class="nav-toggle" type="button" data-nav-toggle aria-expanded="false" aria-label="{{ t('nav.tools') }}">
+            <i data-lucide="menu"></i>
+            <span>{{ t("nav.tools") }}</span>
+            <i data-lucide="chevron-down"></i>
+          </button>
+        </div>
+      </div>
+      <nav class="nav" aria-label="{{ t('nav.tools') }}">
+        {% for tool in tools %}
+          <a class="nav-link {% if request.endpoint == tool.endpoint %}active{% endif %}" href="{{ url_for(tool.endpoint) }}">
+            <span><i data-lucide="{{ tool.icon }}"></i></span>
+            {{ t("tool." ~ tool.id ~ ".name") }}
+          </a>
+        {% endfor %}
+      </nav>
+    </aside>
+    <main class="main">
+      <div class="topbar">
+        <div class="topbar-title">
+          <span>{{ t("app.subtitle") }}</span>
+        </div>
+        <div class="topbar-controls">
+          <div class="lang-switch" aria-label="{{ t('language.label') }}">
+            <a href="{{ language_url('vi') }}" class="{% if current_lang == 'vi' %}active{% endif %}">{{ t("language.vi") }}</a>
+            <a href="{{ language_url('en') }}" class="{% if current_lang == 'en' %}active{% endif %}">{{ t("language.en") }}</a>
+          </div>
+          <button class="theme-toggle" type="button" data-theme-toggle aria-label="Switch color theme" data-label-light="{{ t('theme.light') }}" data-label-dark="{{ t('theme.dark') }}">
+            <i class="theme-icon theme-icon-light" data-lucide="sun"></i>
+            <i class="theme-icon theme-icon-dark" data-lucide="moon"></i>
+            <span class="visually-hidden" data-theme-label>{{ t("theme.light") }}</span>
+          </button>
+        </div>
+      </div>
+      <div class="content">
+        {% block content %}{% endblock %}
+      </div>
+    </main>
+  </div>
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>

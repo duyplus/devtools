@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}{{ t("app.title") }}{% endblock %}
+{% block content %}
+<header class="page-head">
+  <div>
+    <p class="eyebrow">{{ t("dashboard.eyebrow") }}</p>
+    <h2>{{ t("app.title") }}</h2>
+  </div>
+</header>
+
+<section class="tool-grid" aria-label="Available tools">
+  {% for tool in tools %}
+    <a class="tool-card" href="{{ url_for(tool.endpoint) }}">
+      <span class="tool-icon"><i data-lucide="{{ tool.icon }}"></i></span>
+      <span class="tool-card-body">
+        <small>{{ t("tool." ~ tool.id ~ ".category") }}</small>
+        <strong>{{ t("tool." ~ tool.id ~ ".name") }}</strong>
+        <span>{{ t("tool." ~ tool.id ~ ".description") }}</span>
+      </span>
+    </a>
+  {% endfor %}
+</section>
+{% endblock %}

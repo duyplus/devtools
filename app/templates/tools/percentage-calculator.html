@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+{% block title %}{{ t("tool.percentage.name") }}{% endblock %}
+{% block content %}
+<header class="page-head">
+  <div>
+    <p class="eyebrow">{{ t("tool.percentage.category") }}</p>
+    <h2>{{ t("tool.percentage.name") }}</h2>
+  </div>
+</header>
+
+<form class="tool-panel narrow" data-percentage-calculator>
+  <fieldset data-percentage-row="of">
+    <div class="percentage-field-head">
+      <legend>{{ t("percentage.of_title") }}</legend>
+      <button class="percentage-help" type="button" aria-label="{{ t('percentage.help') }}">
+        ?
+        <span class="percentage-tooltip">
+          <strong>{{ t("percentage.of_title") }}</strong>
+          <span>{{ t("percentage.of_help") }}</span>
+          <code>(20% / 100%) × 80 = 16</code>
+        </span>
+      </button>
+    </div>
+    <div class="percentage-line">
+      <input data-percent-field="percent" inputmode="decimal">
+      <span>%</span>
+      <span>{{ t("percentage.of_word") }}</span>
+      <input data-percent-field="value" inputmode="decimal">
+      <span>?</span>
+      <span class="percentage-spacer"></span>
+      <span>=</span>
+      <input data-percent-result readonly>
+    </div>
+  </fieldset>
+  <fieldset data-percentage-row="ratio">
+    <div class="percentage-field-head">
+      <legend>{{ t("percentage.ratio_title") }}</legend>
+      <button class="percentage-help" type="button" aria-label="{{ t('percentage.help') }}">
+        ?
+        <span class="percentage-tooltip">
+          <strong>{{ t("percentage.ratio_title") }}</strong>
+          <span>{{ t("percentage.ratio_help") }}</span>
+          <code>(20 / 80) × 100% = 25%</code>
+        </span>
+      </button>
+    </div>
+    <div class="percentage-line">
+      <input data-percent-field="value" inputmode="decimal">
+      <span>{{ t("percentage.is_what_percent") }}</span>
+      <input data-percent-field="base" inputmode="decimal">
+      <span>?</span>
+      <span class="percentage-spacer"></span>
+      <span>=</span>
+      <input data-percent-result readonly>
+      <span>%</span>
+    </div>
+  </fieldset>
+  <fieldset data-percentage-row="change">
+    <div class="percentage-field-head">
+      <legend>{{ t("percentage.change_title") }}</legend>
+      <button class="percentage-help" type="button" aria-label="{{ t('percentage.help') }}">
+        ?
+        <span class="percentage-tooltip">
+          <strong>{{ t("percentage.change_title") }}</strong>
+          <span>{{ t("percentage.change_help") }}</span>
+          <code>80 × (1 + 100 / 10) = 88</code>
+        </span>
+      </button>
+    </div>
+    <div class="percentage-line">
+      <input data-percent-field="percent" inputmode="decimal">
+      <span>%</span>
+      <select data-percent-field="direction">
+        <option value="increase">{{ t("percentage.increase") }}</option>
+        <option value="decrease">{{ t("percentage.decrease") }}</option>
+      </select>
+      <span>{{ t("percentage.of_word") }}</span>
+      <input data-percent-field="value" inputmode="decimal">
+      <span>?</span>
+      <span class="percentage-spacer"></span>
+      <span>=</span>
+      <input data-percent-result readonly>
+      <span>%</span>
+    </div>
+  </fieldset>
+  <fieldset data-percentage-row="total">
+    <div class="percentage-field-head">
+      <legend>{{ t("percentage.total_title") }}</legend>
+      <button class="percentage-help" type="button" aria-label="{{ t('percentage.help') }}">
+        ?
+        <span class="percentage-tooltip">
+          <strong>{{ t("percentage.total_title") }}</strong>
+          <span>{{ t("percentage.total_help") }}</span>
+          <code>10 × 100 / 5 = 200</code>
+        </span>
+      </button>
+    </div>
+    <div class="percentage-line">
+      <span>{{ t("percentage.number") }}</span>
+      <input data-percent-field="value" inputmode="decimal">
+      <span>{{ t("percentage.is") }}</span>
+      <input data-percent-field="percent" inputmode="decimal">
+      <span>%</span>
+      <span class="percentage-spacer"></span>
+      <span>{{ t("percentage.of_number") }}</span>
+      <input data-percent-result readonly>
+    </div>
+  </fieldset>
+</form>
+{% endblock %}

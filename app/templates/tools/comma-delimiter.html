@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block title %}{{ t("tool.delimiter.name") }}{% endblock %}
+{% block content %}
+<header class="page-head">
+  <div>
+    <p class="eyebrow">{{ t("tool.delimiter.category") }}</p>
+    <h2>{{ t("tool.delimiter.name") }}</h2>
+  </div>
+</header>
+
+{% if error %}<div class="alert">{{ error }}</div>{% endif %}
+<div class="alert" data-delimiter-error hidden></div>
+
+<form class="tool-panel" method="post" data-delimiter-tool>
+  <div class="split">
+    <label>
+      {{ t("delimiter.source") }}
+      <textarea class="delimiter-textarea" name="text" rows="14" data-desktop-rows="14" data-mobile-rows="7" spellcheck="false" data-delimiter-source>{{ form.text }}</textarea>
+    </label>
+    <label>
+      {{ t("common.result") }}
+      <textarea class="delimiter-textarea" rows="14" data-desktop-rows="14" data-mobile-rows="7" spellcheck="false" readonly data-delimiter-result>{{ result }}</textarea>
+    </label>
+  </div>
+  <div class="controls">
+    <label>{{ t("delimiter.input_delimiter") }}
+      <select name="input_delimiter">
+        {% for value, key in [('newline','delimiter.newline'),('comma','delimiter.comma'),('semicolon','delimiter.semicolon'),('pipe','delimiter.pipe'),('spaces','delimiter.spaces'),('custom','delimiter.custom')] %}
+          <option value="{{ value }}" {% if form.input_delimiter == value %}selected{% endif %}>{{ t(key) }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>{{ t("delimiter.input_custom") }}
+      <input name="input_custom" value="{{ form.input_custom }}" placeholder="{{ t('delimiter.custom_placeholder') }}" data-custom-for="input_delimiter">
+    </label>
+    <label>{{ t("delimiter.output_delimiter") }}
+      <select name="output_delimiter">
+        {% for value, key in [('comma','delimiter.comma'),('newline','delimiter.newline'),('semicolon','delimiter.semicolon'),('pipe','delimiter.pipe'),('spaces','delimiter.spaces'),('custom','delimiter.custom')] %}
+          <option value="{{ value }}" {% if form.output_delimiter == value %}selected{% endif %}>{{ t(key) }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>{{ t("delimiter.output_custom") }}
+      <input name="output_custom" value="{{ form.output_custom }}" placeholder="{{ t('delimiter.custom_placeholder') }}" data-custom-for="output_delimiter">
+    </label>
+    <label>{{ t("delimiter.quote") }}
+      <select name="quote">
+        {% for value, key in [('none','delimiter.none'),('single','delimiter.single'),('double','delimiter.double')] %}
+          <option value="{{ value }}" {% if form.quote == value %}selected{% endif %}>{{ t(key) }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>{{ t("delimiter.prefix") }}
+      <input name="prefix" value="{{ form.prefix }}" placeholder="abc...">
+    </label>
+    <label>{{ t("delimiter.suffix") }}
+      <input name="suffix" value="{{ form.suffix }}" placeholder="...xyz">
+    </label>
+    <label>{{ t("delimiter.interval") }}
+      <input name="interval" inputmode="numeric" value="{{ form.interval }}" placeholder="1">
+    </label>
+  </div>
+  <div class="checks">
+    <label><input type="checkbox" name="trim" {% if form.trim %}checked{% endif %}> {{ t("delimiter.trim") }}</label>
+    <label><input type="checkbox" name="remove_blank" {% if form.remove_blank %}checked{% endif %}> {{ t("delimiter.remove_blank") }}</label>
+    <label><input type="checkbox" name="dedupe" {% if form.dedupe %}checked{% endif %}> {{ t("delimiter.dedupe") }}</label>
+  </div>
+  <div class="actions">
+    <button type="submit" name="direction" value="forward">{{ t("common.convert") }}</button>
+    <button type="submit" name="direction" value="reverse" class="secondary">{{ t("common.reverse") }}</button>
+  </div>
+</form>
+{% endblock %}

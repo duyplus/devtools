@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}{{ t("tool.icons.name") }}{% endblock %}
+{% block content %}
+<header class="page-head">
+  <div>
+    <p class="eyebrow">{{ t("tool.icons.category") }}</p>
+    <h2>{{ t("tool.icons.name") }}</h2>
+  </div>
+</header>
+
+{% if error %}<div class="alert">{{ error }}</div>{% endif %}
+
+<form class="tool-panel narrow" method="post" enctype="multipart/form-data">
+  <label class="file-field">{{ t("icons.image_file") }}
+    <span class="upload-dropzone" data-file-dropzone>
+      <input type="file" name="image" accept="image/*" required data-file-input>
+      <span class="upload-content">
+        <i data-lucide="cloud-upload"></i>
+        <strong>{{ t("icons.drop_title") }}</strong>
+        <small data-file-label data-default-text="{{ t('icons.drop_help') }}">{{ t("icons.drop_help") }}</small>
+      </span>
+    </span>
+  </label>
+  <div class="mode-grid">
+    <label class="choice">
+      <input type="radio" name="mode" value="pack" {% if form.mode != "ico" %}checked{% endif %}>
+      <span>
+        <strong>{{ t("icons.pack") }}</strong>
+        <small>{{ t("icons.pack_desc") }}</small>
+      </span>
+    </label>
+    <label class="choice">
+      <input type="radio" name="mode" value="ico" {% if form.mode == "ico" %}checked{% endif %}>
+      <span>
+        <strong>{{ t("icons.ico") }}</strong>
+        <small>{{ t("icons.ico_desc") }}</small>
+      </span>
+    </label>
+  </div>
+  <fieldset id="pack-options" {% if form.mode=="ico" %}hidden{% endif %}>
+    <legend>{{ t("icons.options") }}</legend>
+    <div class="checks">
+      <label><input type="checkbox" name="keep_ratio" value="1" checked> {{ t("icons.keep_ratio") }}</label>
+    </div>
+  </fieldset>
+  <fieldset id="ico-sizes" {% if form.mode !="ico" %}hidden{% endif %}>
+    <legend>{{ t("icons.sizes") }}</legend>
+    <div class="checks columns">
+      {% for size in all_sizes %}
+      <label><input type="checkbox" name="sizes" value="{{ size }}" {% if size == 256 %}data-size-256{% endif %} {% if size in form.sizes %}checked{% endif %}> {{ size }} pixels</label>
+      {% endfor %}
+    </div>
+  </fieldset>
+  <fieldset id="ico-bitdepth" {% if form.mode !="ico" %}hidden{% endif %}>
+    <legend>{{ t("icons.bit_depth") }}</legend>
+    <div class="checks columns">
+      <label><input type="radio" name="bit_depth" value="8" {% if form.bit_depth=="8" %}checked{% endif %}> {{ t("icons.depth_8") }}</label>
+      <label><input type="radio" name="bit_depth" value="32" {% if form.bit_depth !="8" %}checked{% endif %}> {{ t("icons.depth_32") }}</label>
+    </div>
+  </fieldset>
+  <div class="actions">
+    <button type="submit">{{ t("common.generate") }}</button>
+  </div>
+</form>
+{% endblock %}

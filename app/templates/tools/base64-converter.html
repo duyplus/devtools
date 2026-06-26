@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}{{ t("tool.base64.name") }}{% endblock %}
+{% block content %}
+<header class="page-head">
+  <div>
+    <p class="eyebrow">{{ t("tool.base64.category") }}</p>
+    <h2>{{ t("tool.base64.name") }}</h2>
+  </div>
+</header>
+
+{% if error %}<div class="alert">{{ error }}</div>{% endif %}
+<div class="alert" data-base64-error hidden></div>
+
+<form class="tool-panel" method="post" data-base64-tool data-invalid-base64="{{ t('base64.invalid') }}" data-invalid-utf8="{{ t('base64.invalid_utf8') }}">
+  <div class="split">
+    <label>
+      {{ t("base64.source") }}
+      <textarea class="delimiter-textarea" name="text" rows="14" data-desktop-rows="14" data-mobile-rows="7" spellcheck="false" data-base64-source>{{ form.text }}</textarea>
+    </label>
+    <label>
+      {{ t("common.result") }}
+      <textarea class="delimiter-textarea" rows="14" data-desktop-rows="14" data-mobile-rows="7" spellcheck="false" readonly data-base64-result>{{ result }}</textarea>
+    </label>
+  </div>
+  <div class="mode-grid">
+    <label class="choice">
+      <input type="radio" name="mode" value="encode" {% if form.mode != "decode" %}checked{% endif %}>
+      <span>
+        <strong>{{ t("base64.encode") }}</strong>
+        <small>{{ t("base64.encode_desc") }}</small>
+      </span>
+    </label>
+    <label class="choice">
+      <input type="radio" name="mode" value="decode" {% if form.mode == "decode" %}checked{% endif %}>
+      <span>
+        <strong>{{ t("base64.decode") }}</strong>
+        <small>{{ t("base64.decode_desc") }}</small>
+      </span>
+    </label>
+  </div>
+</form>
+{% endblock %}
