@@ -1,11 +1,11 @@
 <!doctype html>
-<html lang="{{ current_lang|default('en') }}" data-theme="light">
+<html lang="{{ current_lang|default('vi') }}" data-theme="light">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{% block title %}{{ t("app.title") }}{% endblock %}</title>
+  <title>{% block title %}{{ t("app.subtitle") }}{% endblock %} - {{ t("app.title") }}</title>
   <link rel="shortcut icon" type="image/x-icon" href="{{ url_for('static', filename='img/favicon.ico') }}">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename=static_asset('css/app.css')) }}">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@300..700&display=swap" rel="stylesheet">
@@ -20,7 +20,7 @@
             <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Logo">
           </span>
           <span>
-            <strong>Devtools</strong>
+            <strong>{{ t("app.title") }}</strong>
             <small>{{ t("app.subtitle") }}</small>
           </span>
         </a>
@@ -49,11 +49,28 @@
           </a>
         {% endfor %}
       </nav>
+      <footer class="app-footer sidebar-footer">
+        Made with ❤️ DUYPLUS
+      </footer>
     </aside>
     <main class="main">
       <div class="topbar">
         <div class="topbar-title">
-          <span>{{ t("app.subtitle") }}</span>
+          <nav class="breadcrumb" aria-label="Breadcrumb">
+            <a href="{{ url_for('dashboard.index') }}">
+              <i data-lucide="home"></i>
+              <span>{{ t("breadcrumb.home") }}</span>
+            </a>
+            {% for tool in tools %}
+              {% if request.endpoint == tool.endpoint %}
+                <span class="breadcrumb-separator">&gt;</span>
+                <span class="breadcrumb-current">
+                  <i data-lucide="{{ tool.icon }}"></i>
+                  <span>{{ t("tool." ~ tool.id ~ ".name") }}</span>
+                </span>
+              {% endif %}
+            {% endfor %}
+          </nav>
         </div>
         <div class="topbar-controls">
           <div class="lang-switch" aria-label="{{ t('language.label') }}">
@@ -70,10 +87,29 @@
       <div class="content">
         {% block content %}{% endblock %}
       </div>
+      <footer class="app-footer main-footer">
+        Made with ❤️ DUYPLUS
+      </footer>
     </main>
   </div>
+  <script id="devtools-i18n" type="application/json">{{ {
+    "js.conversion_failed": t("js.conversion_failed"),
+    "js.copy_image_failed": t("js.copy_image_failed"),
+    "js.copy_image_unsupported": t("js.copy_image_unsupported"),
+    "js.copy_text_done": t("js.copy_text_done"),
+    "js.copy_text_failed": t("js.copy_text_failed"),
+    "js.file_read_done": t("js.file_read_done"),
+    "js.custom_delimiter_empty": t("js.custom_delimiter_empty"),
+    "js.file_read_failed": t("js.file_read_failed"),
+    "js.interval_invalid": t("js.interval_invalid"),
+    "js.request_failed": t("js.request_failed"),
+    "js.request_failed_status": t("js.request_failed_status"),
+    "js.unsupported_delimiter": t("js.unsupported_delimiter"),
+    "js.unsupported_quote": t("js.unsupported_quote"),
+    "qr.placeholder.frame_text": t("qr.placeholder.frame_text"),
+  } | tojson }}</script>
   <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
-  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+  <script src="{{ url_for('static', filename=static_asset('js/app.js')) }}"></script>
 </body>
 </html>

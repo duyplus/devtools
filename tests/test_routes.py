@@ -17,10 +17,12 @@ class RouteTests(unittest.TestCase):
             "/",
             "/tools/icon-converter",
             "/tools/comma-delimiter",
+            "/tools/text-diff",
             "/tools/percentage-calculator",
             "/tools/base64-converter",
             "/tools/js-obfuscator",
             "/tools/password-generator",
+            "/tools/qr-generator",
             "/healthz",
         ):
             response = self.client.get(path)
@@ -31,6 +33,8 @@ class RouteTests(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"data-delimiter-tool", response.data)
         self.assertIn(b"data-delimiter-error", response.data)
+        self.assertIn(b"data-line-numbers-for=\"delimiter-source\"", response.data)
+        self.assertIn(b"data-line-numbers-for=\"delimiter-result\"", response.data)
 
         response = self.client.post(
             "/tools/comma-delimiter",
@@ -49,6 +53,8 @@ class RouteTests(unittest.TestCase):
         response = self.client.get("/tools/base64-converter")
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"data-base64-tool", response.data)
+        self.assertIn(b"data-line-numbers-for=\"base64-source\"", response.data)
+        self.assertIn(b"data-line-numbers-for=\"base64-result\"", response.data)
 
         response = self.client.post(
             "/tools/base64-converter",
@@ -75,6 +81,8 @@ class RouteTests(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"data-javascript-tool", response.data)
         self.assertIn(b"/tools/js-obfuscator/convert", response.data)
+        self.assertIn(b"data-line-numbers-for=\"javascript-source\"", response.data)
+        self.assertIn(b"data-line-numbers-for=\"javascript-result\"", response.data)
 
         response = self.client.post(
             "/tools/js-obfuscator",
@@ -114,20 +122,69 @@ class RouteTests(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"data-password-error", response.data)
         self.assertIn(b"data-password-no-types", response.data)
+        self.assertIn(b"data-line-numbers-for=\"password-result\"", response.data)
 
         response = self.client.post(
             "/tools/password-generator",
             data={
                 "length": "16",
                 "count": "2",
-                "uppercase": "on",
                 "lowercase": "on",
+                "uppercase": "on",
                 "digits": "on",
                 "symbols": "on",
             },
         )
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"data-password-tool", response.data)
+
+    def test_text_diff_post(self):
+        response = self.client.post(
+            "/tools/text-diff",
+            data={
+                "left_text": "a\nb\nc\n",
+                "right_text": "a\nB\nc\nd\n",
+            },
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b"data-text-diff-tool", response.data)
+        self.assertIn(b"data-line-numbers-for=\"text-diff-left\"", response.data)
+        self.assertIn(b"data-line-numbers-for=\"text-diff-right\"", response.data)
+        self.assertIn(b"diff-line-modified", response.data)
+        self.assertIn(b"diff-line-added", response.data)
+        self.assertIn('class="textdiff-total-lines">3 dòng</span>'.encode(), response.data)
+        self.assertIn('class="textdiff-total-lines">4 dòng</span>'.encode(), response.data)
+
+    def test_qr_post(self):
+        response = self.client.get("/tools/qr-generator")
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b"data-qr-tool", response.data)
+        self.assertNotIn(b'name="frame_text_enabled" checked', response.data)
+        self.assertNotIn(b'type="submit"', response.data)
+        self.assertIn(b'name="size" type="range" min="100" max="550" step="50"', response.data)
+
+        response = self.client.post(
+            "/tools/qr-generator",
+            data={
+                "type": "url",
+                "url": "example.com",
+                "size": "350",
+                "foreground": "#000000",
+                "background": "#ffffff",
+            },
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b"data:image/png;base64,", response.data)
+        self.assertIn(b"data:image/jpeg;base64,", response.data)
+        self.assertIn(b"data:image/svg+xml;base64,", response.data)
+        self.assertIn(b"data-copy-image-button", response.data)
+        self.assertIn(b"--qr-preview-size: 350px", response.data)
+
+    def test_qr_error_can_show_toast(self):
+        response = self.client.post("/tools/qr-generator", data={"type": "url", "url": ""})
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b"data-toast-error", response.data)
+        self.assertIn("URL là bắt buộc.".encode(), response.data)
 
     def test_percentage_page_has_live_calculators(self):
         response = self.client.get("/tools/percentage-calculator")
@@ -145,6 +202,14 @@ class RouteTests(unittest.TestCase):
         self.assertIn(translate("vi", "app.subtitle").encode("utf-8"), response.data)
         self.assertIn("devtools_lang=vi", response.headers.get("Set-Cookie", ""))
 
+    def test_topbar_breadcrumb(self):
+        response = self.client.get("/tools/comma-delimiter")
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(translate("vi", "breadcrumb.home").encode("utf-8"), response.data)
+        self.assertIn(translate("vi", "tool.delimiter.name").encode("utf-8"), response.data)
+        self.assertIn(b'data-lucide="home"', response.data)
+        self.assertIn(b'data-lucide="list-filter"', response.data)
+
     def test_icon_invalid_upload(self):
         response = self.client.post(
             "/tools/icon-converter",
@@ -152,7 +217,7 @@ class RouteTests(unittest.TestCase):
             content_type="multipart/form-data",
         )
         self.assertEqual(response.status_code, 200)
-        self.assertIn(b"Unsupported or corrupt image file", response.data)
+        self.assertIn(translate("vi", "icons.error.invalid").encode("utf-8"), response.data)
 
     def test_icon_valid_upload(self):
         image = BytesIO()

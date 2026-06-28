@@ -11,6 +11,8 @@ from app.services.icon_converter import IconError, generate_favicon_pack, genera
 from app.services.js_obfuscator import deobfuscate_javascript, obfuscate_javascript
 from app.services.password_generator import PasswordError, PasswordOptions, generate_passwords
 from app.services.percentage_calculator import PercentageError, calculate_percentage
+from app.services.qr_generator import QRError, QROptions, build_qr_payload, generate_qr_outputs, generate_qr_png
+from app.services.text_diff import compare_texts
 from app.tools.registry import TOOLS
 
 
@@ -44,6 +46,31 @@ class Base64ServiceTests(unittest.TestCase):
     def test_decode_rejects_invalid_base64(self):
         with self.assertRaises(Base64Error):
             decode_base64("not base64!")
+
+
+class TextDiffServiceTests(unittest.TestCase):
+    def test_compare_texts_counts_and_merges(self):
+        result = compare_texts("a\nb\nc\n", "a\nB\nc\nd\n")
+        self.assertEqual(result.modified, 1)
+        self.assertEqual(result.added, 2)
+        self.assertEqual(result.deleted, 1)
+        self.assertEqual(result.left_lines, 3)
+        self.assertEqual(result.right_lines, 4)
+        self.assertEqual(result.merged_text, "a\nB\nc\nd\n")
+
+    def test_compare_texts_keeps_left_choice(self):
+        result = compare_texts("a\nb\n", "a\nB\n", {1: "left"})
+        self.assertEqual(result.merged_text, "a\nb\n")
+
+    def test_compare_texts_does_not_color_equal_lines_inside_replace(self):
+        result = compare_texts("A\r\nB\r\nC\r\n", "A\nB")
+        lines = [line for hunk in result.hunks for line in hunk.lines]
+        self.assertEqual(
+            [(line.left_no, line.right_no, line.kind) for line in lines],
+            [(1, 1, "equal"), (2, 2, "equal"), (3, None, "deleted")],
+        )
+        self.assertEqual(result.added, 0)
+        self.assertEqual(result.deleted, 1)
 
 
 class JavascriptToolServiceTests(unittest.TestCase):
@@ -98,7 +125,7 @@ class PercentageServiceTests(unittest.TestCase):
 class PasswordServiceTests(unittest.TestCase):
     def test_generate_passwords_honors_options(self):
         result = generate_passwords(
-            PasswordOptions(length=12, count=3, uppercase=True, lowercase=False, digits=True, symbols=False)
+            PasswordOptions(length=12, count=3, lowercase=False, uppercase=True, digits=True, symbols=False)
         )
         self.assertEqual(len(result), 3)
         for password in result:
@@ -109,7 +136,66 @@ class PasswordServiceTests(unittest.TestCase):
 
     def test_rejects_no_character_types(self):
         with self.assertRaises(PasswordError):
-            generate_passwords(PasswordOptions(uppercase=False, lowercase=False, digits=False, symbols=False))
+            generate_passwords(PasswordOptions(lowercase=False, uppercase=False, digits=False, symbols=False))
+
+class QRServiceTests(unittest.TestCase):
+    def test_builds_wifi_payload(self):
+        payload = build_qr_payload({"type": "wifi", "wifi_ssid": "Cafe", "wifi_password": "secret"})
+        self.assertEqual(payload, "WIFI:T:WPA;S:Cafe;P:secret;H:false;;")
+
+    def test_generate_qr_png(self):
+        output = generate_qr_png("https://example.com", QROptions(size=256))
+        with Image.open(output) as image:
+            self.assertEqual(image.format, "PNG")
+            self.assertEqual(image.size, (256, 256))
+
+    def test_generate_qr_size_limits(self):
+        with Image.open(generate_qr_png("https://example.com", QROptions(size=50))) as image:
+            self.assertEqual(image.size, (100, 100))
+        with Image.open(generate_qr_png("https://example.com", QROptions(size=1200))) as image:
+            self.assertEqual(image.size, (550, 550))
+
+    def test_generate_qr_outputs(self):
+        output = generate_qr_outputs("https://example.com", QROptions(size=256))
+        self.assertEqual(set(output), {"png", "jpg", "svg"})
+        self.assertTrue(output["svg"].startswith(b"<svg"))
+
+    def test_generate_qr_with_frame_text_options(self):
+        output = generate_qr_outputs(
+            "https://example.com",
+            QROptions(size=200, foreground="#000000FF", background="#FFFFFFFF", margin=4, error_correction="M", frame_text_enabled=True, frame_text="Scan me"),
+        )
+        with Image.open(BytesIO(output["png"])) as image:
+            self.assertGreater(image.height, image.width)
+            pad = (image.width - 200) // 2
+            self.assertEqual(image.convert("RGB").getpixel((0, 0)), (255, 255, 255))
+            self.assertEqual(image.convert("RGB").getpixel((pad, pad)), (0, 0, 0))
+            self.assertEqual(image.convert("RGB").getpixel((0, image.height - 1)), (255, 255, 255))
+        self.assertIn(b"Scan me", output["svg"])
+        self.assertIn(b"Quicksand", output["svg"])
+        self.assertIn(b'font-weight="700"', output["svg"])
+        self.assertIn(b'stroke="#000000"', output["svg"])
+
+    def test_transparent_logo_gets_white_background(self):
+        logo = BytesIO()
+        Image.new("RGBA", (40, 40), (0, 0, 0, 0)).save(logo, format="PNG")
+        output = generate_qr_png("https://example.com", QROptions(size=200), logo.getvalue())
+        with Image.open(output) as image:
+            self.assertEqual(image.convert("RGB").getpixel((100, 100)), (255, 255, 255))
+
+    def test_rejects_logo_decompression_bomb(self):
+        from app.services import qr_generator
+
+        old_limit = Image.MAX_IMAGE_PIXELS
+        try:
+            Image.MAX_IMAGE_PIXELS = 1
+            logo = BytesIO()
+            Image.new("RGBA", (2, 2), (0, 0, 0, 255)).save(logo, format="PNG")
+            with self.assertRaises(QRError):
+                generate_qr_png("https://example.com", QROptions(size=200), logo.getvalue())
+        finally:
+            Image.MAX_IMAGE_PIXELS = old_limit
+            qr_generator.Image.MAX_IMAGE_PIXELS = old_limit
 
 class IconServiceTests(unittest.TestCase):
     def _png(self):
@@ -136,6 +222,18 @@ class IconServiceTests(unittest.TestCase):
     def test_generate_ico_rejects_256_for_8_bit(self):
         with self.assertRaises(IconError):
             generate_ico(self._png(), [256], "8")
+
+    def test_rejects_icon_decompression_bomb(self):
+        from app.services import icon_converter
+
+        old_limit = Image.MAX_IMAGE_PIXELS
+        try:
+            Image.MAX_IMAGE_PIXELS = 1
+            with self.assertRaises(IconError):
+                generate_ico(self._png(), [16], "32")
+        finally:
+            Image.MAX_IMAGE_PIXELS = old_limit
+            icon_converter.Image.MAX_IMAGE_PIXELS = old_limit
 
 
 class RegistryTests(unittest.TestCase):

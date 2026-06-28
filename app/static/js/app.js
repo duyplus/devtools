@@ -1,4 +1,63 @@
 let javascriptRequestSequence = 0;
+let qrSubmitTimer = 0;
+
+const DEVTOOLS_MESSAGE_KEYS = {
+  conversionFailed: "js.conversion_failed",
+  copyImageFailed: "js.copy_image_failed",
+  copyImageUnsupported: "js.copy_image_unsupported",
+  copyTextDone: "js.copy_text_done",
+  copyTextFailed: "js.copy_text_failed",
+  fileReadDone: "js.file_read_done",
+  customDelimiterEmpty: "js.custom_delimiter_empty",
+  fileReadFailed: "js.file_read_failed",
+  frameTextDefault: "qr.placeholder.frame_text",
+  intervalInvalid: "js.interval_invalid",
+  requestFailed: "js.request_failed",
+  requestFailedStatus: "js.request_failed_status",
+  unsupportedDelimiter: "js.unsupported_delimiter",
+  unsupportedQuote: "js.unsupported_quote",
+};
+
+function loadDevtoolsMessages() {
+  const raw = $("#devtools-i18n").text() || "{}";
+  const source = JSON.parse(raw);
+  return Object.fromEntries(Object.entries(DEVTOOLS_MESSAGE_KEYS).map(([name, key]) => [name, source[key] || key]));
+}
+
+function i18n(key, params) {
+  window.devtoolsMessages ||= loadDevtoolsMessages();
+  const template = window.devtoolsMessages[key] || key;
+  return String(template).replace(/\{(\w+)\}/g, (_, name) => params?.[name] ?? "");
+}
+
+function toast(message, type) {
+  if (!message) {
+    return;
+  }
+  const $stack = $(".toast-stack").length ? $(".toast-stack") : $("<div>", { class: "toast-stack", role: "status", "aria-live": "polite" }).appendTo("body");
+  const toastClass = `toast-${type || "success"}`;
+  const duplicate = $stack.find(`.${toastClass}`).toArray().some((item) => $(item).text() === message);
+  if (duplicate) {
+    return;
+  }
+  const $toast = $("<div>", { class: `toast ${toastClass}` }).text(message).appendTo($stack);
+  window.setTimeout(() => $toast.addClass("is-visible"), 10);
+  window.setTimeout(() => {
+    $toast.removeClass("is-visible");
+    window.setTimeout(() => $toast.remove(), 220);
+  }, 3200);
+}
+
+function notifySuccess(message) {
+  toast(message, "success");
+}
+
+function notifyError(message) {
+  toast(message, "error");
+}
+
+window.notifySuccess = notifySuccess;
+window.notifyError = notifyError;
 
 function currentTheme() {
   return $("html").attr("data-theme") || "light";
@@ -22,13 +81,17 @@ function refreshUi() {
   syncIconOptions();
   syncFileInputs();
   syncDelimiterOptions();
+  syncLineNumbers();
   syncResponsiveTextareas();
   syncBase64Tools();
   syncJavascriptOptions();
   syncJavascriptTools();
   syncPercentageCalculators();
   syncPasswordTools();
+  syncQrTools();
+  syncTextDiffTools();
   syncNavToggle();
+  syncServerToasts();
 }
 
 function syncNavToggle() {
@@ -36,6 +99,32 @@ function syncNavToggle() {
   const $navToggle = $("[data-nav-toggle]");
   if ($sidebar.length && $navToggle.length) {
     $navToggle.attr("aria-expanded", $sidebar.hasClass("nav-open") ? "true" : "false");
+  }
+}
+
+function syncServerToasts(root) {
+  $(root || document).find("[data-toast-error], [data-toast-success]").each(function () {
+    const $node = $(this);
+    const message = $node.text().trim();
+    if (!message || $node.data("toastShown")) {
+      return;
+    }
+    $node.data("toastShown", true);
+    ($node.is("[data-toast-error]") ? notifyError : notifySuccess)(message);
+  });
+}
+
+function setToolError($node, message) {
+  const text = String(message || "");
+  $node.text(text).prop("hidden", true);
+  if (!text) {
+    $node.removeData("lastToast");
+    return;
+  }
+  if ($node.data("lastToast") !== text) {
+    $node.data("lastToast", text);
+    $node.data("toastShown", true);
+    notifyError(text);
   }
 }
 
@@ -85,6 +174,35 @@ function syncDelimiterOptions() {
   });
 }
 
+function lineCount(value) {
+  return value ? String(value).split(/\r\n|\r|\n/).length : 0;
+}
+
+function renderLineNumbersFor($textarea) {
+  const key = $textarea.data("lineNumbersTarget");
+  const $gutter = $(`[data-line-numbers-for="${key}"]`);
+  const count = Math.max(1, lineCount($textarea.val()));
+  $gutter.html(`<span class="line-number-list">${Array.from({ length: count }, (_, index) => `<span>${index + 1}</span>`).join("")}</span>`);
+  if (!$textarea.data("lineScrollBound")) {
+    $textarea.on("scroll", function () {
+      syncLineNumberScroll($(this));
+    });
+    $textarea.data("lineScrollBound", true);
+  }
+  syncLineNumberScroll($textarea);
+}
+
+function syncLineNumbers(root) {
+  $(root || document).find("[data-line-numbers-target]").each(function () {
+    renderLineNumbersFor($(this));
+  });
+}
+
+function syncLineNumberScroll($textarea) {
+  const key = $textarea.data("lineNumbersTarget");
+  $(`[data-line-numbers-for="${key}"] .line-number-list`).css("transform", `translateY(-${$textarea.scrollTop()}px)`);
+}
+
 function delimiterValue(name, custom) {
   const delimiters = {
     newline: "\n",
@@ -95,12 +213,12 @@ function delimiterValue(name, custom) {
   };
   if (name === "custom") {
     if (custom === "") {
-      throw new Error("Custom delimiter cannot be empty.");
+      throw new Error(i18n("customDelimiterEmpty"));
     }
     return custom;
   }
   if (!(name in delimiters)) {
-    throw new Error("Unsupported delimiter.");
+    throw new Error(i18n("unsupportedDelimiter"));
   }
   return delimiters[name];
 }
@@ -129,7 +247,7 @@ function delimiterQuote(name) {
   if (name === "double") {
     return "\"";
   }
-  throw new Error("Unsupported quote option.");
+  throw new Error(i18n("unsupportedQuote"));
 }
 
 function dedupeItems(items) {
@@ -145,7 +263,7 @@ function dedupeItems(items) {
 
 function joinDelimiterItems(items, delimiter, interval) {
   if (interval < 0) {
-    throw new Error("Interval must be zero or greater.");
+    throw new Error(i18n("intervalInvalid"));
   }
   if (interval === 0) {
     return items.join(delimiter);
@@ -186,18 +304,19 @@ function calculateDelimiterTool(form, direction) {
     items = items.map((item) => `${field("prefix")}${quote}${item}${quote}${field("suffix")}`);
     const intervalRaw = field("interval").trim();
     if (intervalRaw && !/^-?\d+$/.test(intervalRaw)) {
-      throw new Error("Interval must be zero or greater.");
+      throw new Error(i18n("intervalInvalid"));
     }
     const interval = intervalRaw ? Number.parseInt(intervalRaw, 10) : 0;
     if (!Number.isFinite(interval)) {
-      throw new Error("Interval must be zero or greater.");
+      throw new Error(i18n("intervalInvalid"));
     }
     $result.val(joinDelimiterItems(items, delimiterValue(outputDelimiter, outputCustom), interval));
-    $error.prop("hidden", true).text("");
+    setToolError($error, "");
   } catch (error) {
     $result.val("");
-    $error.text(error.message || "Conversion failed.").prop("hidden", false);
+    setToolError($error, error.message || i18n("conversionFailed"));
   }
+  syncLineNumbers(form);
 }
 
 function syncResponsiveTextareas() {
@@ -302,11 +421,12 @@ function calculateBase64Tool(form) {
   }
   try {
     $result.val(mode === "decode" ? decodeBase64Text($source.val()) : encodeBase64Text($source.val()));
-    $error.prop("hidden", true).text("");
+    setToolError($error, "");
   } catch (decodeError) {
     $result.val("");
-    $error.text(decodeError.message === "invalid-base64" ? $form.data("invalidBase64") : $form.data("invalidUtf8")).prop("hidden", false);
+    setToolError($error, decodeError.message === "invalid-base64" ? $form.data("invalidBase64") : $form.data("invalidUtf8"));
   }
+  syncLineNumbers(form);
 }
 
 function syncBase64Tools(root) {
@@ -332,7 +452,8 @@ function calculateJavascriptTool(form) {
   }
   if (!$source.val()) {
     $result.val("");
-    $error.prop("hidden", true).text("");
+    setToolError($error, "");
+    syncLineNumbers(form);
     return;
   }
   javascriptRequestSequence += 1;
@@ -350,10 +471,11 @@ function calculateJavascriptTool(form) {
       return;
     }
     $result.val(payload.result || "");
-    $error.text(payload.error || "").prop("hidden", !payload.error);
+    setToolError($error, payload.error || "");
+    syncLineNumbers(form);
   }).fail((xhr, status, error) => {
     if ($form.data("requestId") === requestId) {
-      $error.text(error || status || "Request failed.").prop("hidden", false);
+      setToolError($error, error || status || i18n("requestFailed"));
     }
   });
 }
@@ -394,6 +516,174 @@ function syncPasswordTools(root) {
   });
 }
 
+function syncQrTools(root) {
+  $(root || document).find("[data-qr-tool]").each(function () {
+    const $form = $(this);
+    const type = $form.find('input[name="type"]:checked').val() || "url";
+    $form.find("[data-qr-fields]").each(function () {
+      const active = $(this).data("qrFields") === type;
+      $(this).prop("hidden", !active).toggleClass("is-active", active);
+    });
+    syncQrStyleControls($form);
+  });
+}
+
+function syncQrStyleControls($form) {
+  $form.find("[data-qr-range]").each(function () {
+    $form.find(`[data-qr-range-output="${$(this).data("qrRange")}"]`).text($(this).val());
+  });
+  $form.find("[data-qr-color-value]").each(function () {
+    const key = $(this).data("qrColorValue");
+    const color = normalizeQrColor($(this).val());
+    $(this).val(color);
+    $form.find(`[data-qr-color-picker="${key}"]`).val(color.slice(0, 7));
+  });
+  const frameEnabled = $form.find("[data-qr-frame-toggle]").prop("checked");
+  $form.find("[data-qr-frame-text] input").prop("disabled", !frameEnabled);
+}
+
+function normalizeQrColor(value) {
+  const raw = String(value || "").trim();
+  if (/^#[0-9a-f]{6}$/i.test(raw)) {
+    return `${raw.toUpperCase()}FF`;
+  }
+  if (/^#[0-9a-f]{8}$/i.test(raw)) {
+    return raw.toUpperCase();
+  }
+  return "#000000FF";
+}
+
+function queueQrSubmit(form) {
+  window.clearTimeout(qrSubmitTimer);
+  qrSubmitTimer = window.setTimeout(() => {
+    if (document.contains(form)) {
+      submitQrTool(form);
+    }
+  }, 500);
+}
+
+function submitQrTool(form) {
+  const $form = $(form);
+  const url = new URL(form.action || window.location.href, window.location.href);
+  $.ajax({
+    url: url.toString(),
+    method: "POST",
+    data: formData(form),
+    processData: false,
+    contentType: false,
+    headers: { "X-Requested-With": "fetch" },
+  }).done((html) => {
+    const doc = new DOMParser().parseFromString(html, "text/html");
+    const $nextPreview = $(doc).find(".qr-preview");
+    const $nextError = $(doc).find("[data-qr-error]");
+    const hadError = Boolean($form.data("qrHadError"));
+    if ($nextPreview.length) {
+      $form.find(".qr-preview").replaceWith($nextPreview);
+    }
+    if ($nextError.length) {
+      const message = $nextError.text().trim();
+      const hasError = Boolean(message);
+      const $currentError = $("[data-qr-error]");
+      $currentError.text(message).prop("hidden", true);
+      if (hasError) {
+        $form.data("qrHadError", true);
+        setToolError($currentError, message);
+      } else if (hadError && $nextPreview.find("[data-copy-image]").length) {
+        $form.data("qrHadError", false);
+        notifySuccess($form.data("qrSuccess"));
+      }
+    }
+    refreshUi();
+  }).fail((xhr, status, error) => {
+    setToolError($("[data-qr-error]"), error || status || i18n("requestFailed"));
+  });
+}
+
+function syncTextDiffTools(root) {
+  $(root || document).find("[data-text-diff-tool]").each(function () {
+    bindTextDiffControls(this);
+  });
+}
+
+function bindTextDiffControls(form) {
+  const $form = $(form);
+  $form.find("[data-copy-text-area]").off("click.textdiff").on("click.textdiff", function (event) {
+    event.preventDefault();
+    event.stopPropagation();
+    copyText(form.elements?.[$(this).data("copyTextArea")]?.value || "");
+  });
+  $form.find("[data-textdiff-swap]").off("click.textdiff").on("click.textdiff", function (event) {
+    event.preventDefault();
+    event.stopPropagation();
+    const left = form.elements?.left_text;
+    const right = form.elements?.right_text;
+    if (!left || !right) {
+      return;
+    }
+    const leftValue = left.value;
+    left.value = right.value;
+    right.value = leftValue;
+    syncLineNumbers(form);
+  });
+  $form.find("[data-text-file-target]").off("change.textdiff").on("change.textdiff", function (event) {
+    event.stopPropagation();
+    readTextDiffFile(this);
+  });
+}
+
+function readTextDiffFile(input) {
+  const file = input.files?.[0];
+  const targetName = $(input).data("textFileTarget");
+  const form = $(input).closest("[data-text-diff-tool]").get(0);
+  const target = form?.elements?.[targetName];
+  if (!file || !target) {
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = () => {
+    $(target).val(String(reader.result || ""));
+    syncLineNumbers(form);
+    notifySuccess(i18n("fileReadDone"));
+  };
+  reader.onerror = () => notifyError(i18n("fileReadFailed"));
+  reader.readAsText(file);
+}
+
+function copyText(value) {
+  if (navigator.clipboard?.writeText) {
+    return navigator.clipboard.writeText(value)
+      .then(() => notifySuccess(i18n("copyTextDone")))
+      .catch((error) => notifyError(error.message || i18n("copyTextFailed")));
+  }
+  try {
+    const textarea = $("<textarea>").val(value).appendTo(document.body).get(0);
+    textarea.select();
+    document.execCommand("copy");
+    $(textarea).remove();
+    notifySuccess(i18n("copyTextDone"));
+  } catch {
+    notifyError(i18n("copyTextFailed"));
+  }
+}
+
+function copyQrImage(button) {
+  const image = $(button).closest("[data-qr-tool]").find("[data-copy-image]").get(0);
+  if (!image?.src || !navigator.clipboard || !window.ClipboardItem) {
+    notifyError(i18n("copyImageUnsupported"));
+    return;
+  }
+  fetch(image.src)
+    .then((response) => response.blob())
+    .then((blob) => navigator.clipboard.write([new ClipboardItem({ [blob.type]: blob })]))
+    .then(() => {
+      const message = $(button).data("copySuccess");
+      if (message) {
+        notifySuccess(message);
+      }
+    })
+    .catch((error) => notifyError(error.message || i18n("copyImageFailed")));
+}
+
 function secureRandomIndex(max) {
   const limit = Math.floor(0x100000000 / max) * max;
   const buffer = new Uint32Array(1);
@@ -413,11 +703,11 @@ function generatePasswordTool(form) {
   const length = Math.min(128, Math.max(4, Number($form.find("[data-password-length-input]").val()) || 16));
   const count = Math.min(50, Math.max(1, Number($form.find('input[name="count"]').val()) || 1));
   const groups = [];
-  if ($form.find('input[name="uppercase"]').prop("checked")) {
-    groups.push("ABCDEFGHIJKLMNOPQRSTUVWXYZ");
-  }
   if ($form.find('input[name="lowercase"]').prop("checked")) {
     groups.push("abcdefghijklmnopqrstuvwxyz");
+  }
+  if ($form.find('input[name="uppercase"]').prop("checked")) {
+    groups.push("ABCDEFGHIJKLMNOPQRSTUVWXYZ");
   }
   if ($form.find('input[name="digits"]').prop("checked")) {
     groups.push("0123456789");
@@ -426,10 +716,10 @@ function generatePasswordTool(form) {
     groups.push("!@#$%^&*");
   }
   if (!groups.length) {
-    $error.text($form.data("passwordNoTypes")).prop("hidden", false);
+    setToolError($error, $form.data("passwordNoTypes"));
     return;
   }
-  $error.prop("hidden", true).text("");
+  setToolError($error, "");
   const pool = groups.join("");
   const passwords = [];
   for (let item = 0; item < count; item += 1) {
@@ -443,7 +733,10 @@ function generatePasswordTool(form) {
     }
     passwords.push(chars.join(""));
   }
-  $form.find("[data-password-result]").val(passwords.join("\n"));
+  const $result = $form.find("[data-password-result]");
+  $result.val(passwords.join("\n"));
+  renderLineNumbersFor($result);
+  notifySuccess($form.data("passwordSuccess"));
 }
 
 function parseFilename(disposition) {
@@ -519,16 +812,16 @@ function requestPage(url, options) {
       return;
     }
     if (!response.ok) {
-      alert(responseToText(data) || `Request failed with status ${response.status}.`);
+      notifyError(responseToText(data) || i18n("requestFailedStatus", { status: response.status }));
       return;
     }
     if (!contentType.includes("text/html")) {
-      alert(responseToText(data) || `Request failed with status ${response.status}.`);
+      notifyError(responseToText(data) || i18n("requestFailedStatus", { status: response.status }));
       return;
     }
     replaceShell(responseToText(data), response.url || url, addHistory);
   }).catch((error) => {
-    alert(error.message || "Request failed.");
+    notifyError(error.message || i18n("requestFailed"));
   }).finally(() => {
     $(".shell").removeClass("is-loading");
   });
@@ -576,6 +869,31 @@ function bindEvents() {
       syncNavToggle();
       return;
     }
+    const $qrChoice = $target.closest("[data-qr-tool] .qr-type-grid .choice");
+    if ($qrChoice.length) {
+      event.preventDefault();
+      const input = $qrChoice.find('input[name="type"]').get(0);
+      if (input) {
+        input.checked = true;
+        const form = $qrChoice.closest("[data-qr-tool]").get(0);
+        syncQrTools(form);
+        queueQrSubmit(form);
+      }
+      return;
+    }
+    const $copyImageButton = $target.closest("[data-copy-image-button]");
+    if ($copyImageButton.length) {
+      event.preventDefault();
+      copyQrImage($copyImageButton.get(0));
+      return;
+    }
+    const $textFileCopy = $target.closest("[data-copy-text-area]");
+    if ($textFileCopy.length) {
+      event.preventDefault();
+      const form = $textFileCopy.closest("[data-text-diff-tool]").get(0);
+      copyText(form?.elements?.[$textFileCopy.data("copyTextArea")]?.value || "");
+      return;
+    }
     const $sidebar = $(".sidebar.nav-open");
     if ($sidebar.length && !$target.closest(".sidebar").length) {
       $sidebar.removeClass("nav-open");
@@ -612,9 +930,29 @@ function bindEvents() {
     }
     if ($target.is("[data-file-input]")) {
       updateFileLabel(event.target);
+      if ($target.closest("[data-qr-tool]").length) {
+        queueQrSubmit($target.closest("[data-qr-tool]").get(0));
+      }
+    }
+    if ($target.is("[data-text-file-target]")) {
+      readTextDiffFile(event.target);
     }
     if ($target.is('select[name="input_delimiter"], select[name="output_delimiter"]')) {
       syncDelimiterOptions();
+    }
+    if ($target.is('input[name="type"]') && $target.closest("[data-qr-tool]").length) {
+      const form = $target.closest("[data-qr-tool]").get(0);
+      syncQrTools(form);
+      queueQrSubmit(form);
+    }
+    if ($target.closest("[data-qr-style-controls]").length) {
+      const $form = $target.closest("[data-qr-tool]");
+      if ($target.is("[data-qr-color-picker]")) {
+        const key = $target.data("qrColorPicker");
+        $form.find(`[data-qr-color-value="${key}"]`).val(`${$target.val().toUpperCase()}FF`);
+      }
+      syncQrStyleControls($form);
+      queueQrSubmit($form.get(0));
     }
     if ($target.closest("[data-percentage-row]").length) {
       syncPercentageCalculators();
@@ -629,6 +967,9 @@ function bindEvents() {
     if ($target.closest("[data-password-tool]").length) {
       syncPasswordTool($target.closest("[data-password-tool]").get(0), event.target);
     }
+    if ($target.closest("[data-qr-tool]").length) {
+      queueQrSubmit($target.closest("[data-qr-tool]").get(0));
+    }
   });
 
   $(document).on("input", function (event) {
@@ -636,6 +977,9 @@ function bindEvents() {
     const $row = $target.closest("[data-percentage-row]");
     const $base64Form = $target.closest("[data-base64-tool]");
     const $javascriptForm = $target.closest("[data-javascript-tool]");
+    if ($target.is("[data-line-numbers-target]")) {
+      syncLineNumbers($target.closest("form").get(0) || document);
+    }
     if ($row.length) {
       calculatePercentageRow($row.get(0));
     }
@@ -648,6 +992,37 @@ function bindEvents() {
     if ($target.closest("[data-password-tool]").length) {
       syncPasswordTool($target.closest("[data-password-tool]").get(0), event.target);
     }
+    if ($target.closest("[data-qr-style-controls]").length) {
+      const $form = $target.closest("[data-qr-tool]");
+      if ($target.is("[data-qr-range]")) {
+        $form.find(`[data-qr-range-output="${$target.data("qrRange")}"]`).text($target.val());
+      }
+      queueQrSubmit($form.get(0));
+    }
+    if ($target.closest("[data-qr-tool]").length) {
+      queueQrSubmit($target.closest("[data-qr-tool]").get(0));
+    }
+	  });
+
+  document.addEventListener("scroll", function (event) {
+    const $target = $(event.target);
+    if ($target.is("[data-line-numbers-target]")) {
+      syncLineNumberScroll($target);
+    }
+  }, true);
+
+  $(document).on("click", "[data-qr-reset-defaults]", function () {
+    const $form = $(this).closest("[data-qr-tool]");
+    $form.find('[name="foreground"]').val("#000000FF");
+    $form.find('[name="background"]').val("#FFFFFFFF");
+    $form.find('[name="size"]').val("300");
+    $form.find('[name="margin"]').val("2");
+    $form.find('[name="error_correction"]').val("M");
+    $form.find('[name="frame_text_enabled"]').prop("checked", false);
+    $form.find('[name="frame_text"]').val(i18n("frameTextDefault"));
+    $form.find('[name="logo"]').val("");
+    syncQrStyleControls($form);
+    queueQrSubmit($form.get(0));
   });
 
   $(document).on("dragover", function (event) {
@@ -687,6 +1062,11 @@ function bindEvents() {
     const $form = $(form);
     const method = String(form.method || "GET").toUpperCase();
     const url = new URL(form.action || window.location.href, window.location.href);
+    if ($form.is("[data-qr-tool]")) {
+      event.preventDefault();
+      submitQrTool(form);
+      return;
+    }
     if ($form.is("[data-percentage-calculator]")) {
       event.preventDefault();
       return;

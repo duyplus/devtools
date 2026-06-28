@@ -1,28 +1,34 @@
 import json
 from io import BytesIO
+import warnings
 import zipfile
 
 from PIL import Image, ImageOps, UnidentifiedImageError
 
 
 class IconError(ValueError):
-    pass
+    def __init__(self, key):
+        self.key = key
+        self.params = {}
+        super().__init__(key)
 
 
 ICO_SIZES = {16, 24, 32, 48, 64, 128, 256}
+MAX_IMAGE_PIXELS = 4_000_000
+Image.MAX_IMAGE_PIXELS = MAX_IMAGE_PIXELS
 
 
 def generate_ico(image_bytes, sizes, bit_depth="32", keep_ratio=False):
     sizes = _clean_sizes(sizes)
     if bit_depth == "8" and 256 in sizes:
-        raise IconError("256x256 ICO requires 32-bit alpha.")
+        raise IconError("icons.error.size_256_alpha")
 
     image = _open_image(image_bytes)
     base = _square_png(image, max(sizes), keep_ratio=keep_ratio)
     if bit_depth == "8":
         base = base.convert("RGB").convert("P", palette=Image.Palette.ADAPTIVE, colors=256)
     elif bit_depth != "32":
-        raise IconError("Unsupported bit depth.")
+        raise IconError("icons.error.bit_depth")
 
     output = BytesIO()
     base.save(output, format="ICO", sizes=[(size, size) for size in sizes])
@@ -176,12 +182,19 @@ def generate_favicon_pack(image_bytes, keep_ratio=False):
 
 def _open_image(image_bytes):
     if not image_bytes:
-        raise IconError("Image file is empty.")
+        raise IconError("icons.error.empty")
     try:
-        image = Image.open(BytesIO(image_bytes))
-        image.load()
-    except (OSError, UnidentifiedImageError) as exc:
-        raise IconError("Unsupported or corrupt image file.") from exc
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", Image.DecompressionBombWarning)
+            image = Image.open(BytesIO(image_bytes))
+            image.load()
+    except (
+        OSError,
+        UnidentifiedImageError,
+        Image.DecompressionBombError,
+        Image.DecompressionBombWarning,
+    ) as exc:
+        raise IconError("icons.error.invalid")
     return image.convert("RGBA")
 
 
@@ -210,5 +223,5 @@ def _png_bytes(image):
 def _clean_sizes(sizes):
     cleaned = sorted({int(size) for size in sizes if int(size) in ICO_SIZES})
     if not cleaned:
-        raise IconError("Choose at least one ICO size.")
+        raise IconError("icons.error.size_required")
     return cleaned

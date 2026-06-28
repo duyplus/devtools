@@ -1,5 +1,6 @@
-from flask import Blueprint, render_template, request
+from flask import Blueprint, g, render_template, request
 
+from app.i18n import translate_error
 from app.services.base64_converter import Base64Error, decode_base64, encode_base64
 
 bp = Blueprint("base64_converter", __name__, url_prefix="/tools/base64-converter")
@@ -25,8 +26,8 @@ def index():
             elif mode == "encode":
                 result = encode_base64(text)
             else:
-                raise Base64Error("Unsupported Base64 mode.")
+                raise Base64Error("base64.error.mode")
         except Base64Error as exc:
-            error = str(exc)
+            error = translate_error(g.lang, exc)
 
     return render_template("tools/base64-converter.html", form=form, result=result, error=error)

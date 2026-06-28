@@ -2,6 +2,13 @@ from dataclasses import dataclass
 import re
 
 
+class DelimiterError(ValueError):
+    def __init__(self, key):
+        self.key = key
+        self.params = {}
+        super().__init__(key)
+
+
 @dataclass(frozen=True)
 class DelimiterOptions:
     input_delimiter: str = "newline"
@@ -55,10 +62,10 @@ def _split(text, delimiter_name, custom):
 def _delimiter(name, custom):
     if name == "custom":
         if custom == "":
-            raise ValueError("Custom delimiter cannot be empty.")
+            raise DelimiterError("delimiter.error.custom_empty")
         return custom
     if name not in DELIMITERS:
-        raise ValueError("Unsupported delimiter.")
+        raise DelimiterError("delimiter.error.unsupported_delimiter")
     return DELIMITERS[name]
 
 
@@ -69,7 +76,7 @@ def _quote(name):
         return "'"
     if name == "double":
         return '"'
-    raise ValueError("Unsupported quote option.")
+    raise DelimiterError("delimiter.error.unsupported_quote")
 
 
 def _dedupe(items):
@@ -85,7 +92,7 @@ def _dedupe(items):
 
 def _join(items, delimiter, interval):
     if interval < 0:
-        raise ValueError("Interval must be zero or greater.")
+        raise DelimiterError("delimiter.error.interval")
     if interval == 0:
         return delimiter.join(items)
 

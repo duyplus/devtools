@@ -3,23 +3,27 @@
 {% block content %}
 <header class="page-head">
   <div>
-    <p class="eyebrow">{{ t("tool.javascript.category") }}</p>
     <h2>{{ t("tool.javascript.name") }}</h2>
+    <p class="page-description">{{ t("tool.javascript.description") }}</p>
   </div>
 </header>
-
-{% if error %}<div class="alert">{{ error }}</div>{% endif %}
-<div class="alert" data-javascript-error hidden></div>
-
+{% if error %}<div data-toast-error hidden>{{ error }}</div>{% endif %}
+<div data-javascript-error hidden></div>
 <form class="tool-panel" method="post" data-javascript-tool data-live-url="{{ url_for('js_obfuscator.convert') }}">
   <div class="split">
     <label>
       {{ t("javascript.source") }}
-      <textarea class="delimiter-textarea" name="text" rows="14" data-desktop-rows="14" data-mobile-rows="7" spellcheck="false" data-javascript-source>{{ form.text }}</textarea>
+      <span class="line-numbered-textarea">
+        <span class="line-number-gutter" data-line-numbers-for="javascript-source"></span>
+        <textarea class="delimiter-textarea" name="text" rows="14" data-desktop-rows="14" data-mobile-rows="7" spellcheck="false" data-javascript-source data-line-numbers-target="javascript-source">{{ form.text }}</textarea>
+      </span>
     </label>
     <label>
       {{ t("common.result") }}
-      <textarea class="delimiter-textarea" rows="14" data-desktop-rows="14" data-mobile-rows="7" spellcheck="false" readonly data-javascript-result>{{ result }}</textarea>
+      <span class="line-numbered-textarea">
+        <span class="line-number-gutter" data-line-numbers-for="javascript-result"></span>
+        <textarea class="delimiter-textarea" rows="14" data-desktop-rows="14" data-mobile-rows="7" spellcheck="false" readonly data-javascript-result data-line-numbers-target="javascript-result">{{ result }}</textarea>
+      </span>
     </label>
   </div>
   <div class="mode-grid">

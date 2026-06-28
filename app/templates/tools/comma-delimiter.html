@@ -3,24 +3,28 @@
 {% block content %}
 <header class="page-head">
   <div>
-    <p class="eyebrow">{{ t("tool.delimiter.category") }}</p>
     <h2>{{ t("tool.delimiter.name") }}</h2>
+    <p class="page-description">{{ t("tool.delimiter.description") }}</p>
   </div>
 </header>
-
-{% if error %}<div class="alert">{{ error }}</div>{% endif %}
-<div class="alert" data-delimiter-error hidden></div>
-
+{% if error %}<div data-toast-error hidden>{{ error }}</div>{% endif %}
+<div data-delimiter-error hidden></div>
 <form class="tool-panel" method="post" data-delimiter-tool>
   <div class="split">
-    <label>
-      {{ t("delimiter.source") }}
-      <textarea class="delimiter-textarea" name="text" rows="14" data-desktop-rows="14" data-mobile-rows="7" spellcheck="false" data-delimiter-source>{{ form.text }}</textarea>
-    </label>
-    <label>
-      {{ t("common.result") }}
-      <textarea class="delimiter-textarea" rows="14" data-desktop-rows="14" data-mobile-rows="7" spellcheck="false" readonly data-delimiter-result>{{ result }}</textarea>
-    </label>
+	    <label>
+	      {{ t("delimiter.source") }}
+	      <span class="line-numbered-textarea">
+	        <span class="line-number-gutter" data-line-numbers-for="delimiter-source"></span>
+	        <textarea class="delimiter-textarea" name="text" rows="14" data-desktop-rows="14" data-mobile-rows="7" spellcheck="false" data-delimiter-source data-line-numbers-target="delimiter-source">{{ form.text }}</textarea>
+	      </span>
+	    </label>
+	    <label>
+	      {{ t("common.result") }}
+	      <span class="line-numbered-textarea">
+	        <span class="line-number-gutter" data-line-numbers-for="delimiter-result"></span>
+	        <textarea class="delimiter-textarea" rows="14" data-desktop-rows="14" data-mobile-rows="7" spellcheck="false" readonly data-delimiter-result data-line-numbers-target="delimiter-result">{{ result }}</textarea>
+	      </span>
+	    </label>
   </div>
   <div class="controls">
     <label>{{ t("delimiter.input_delimiter") }}

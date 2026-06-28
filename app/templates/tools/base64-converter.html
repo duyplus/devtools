@@ -3,23 +3,27 @@
 {% block content %}
 <header class="page-head">
   <div>
-    <p class="eyebrow">{{ t("tool.base64.category") }}</p>
     <h2>{{ t("tool.base64.name") }}</h2>
+    <p class="page-description">{{ t("tool.base64.description") }}</p>
   </div>
 </header>
-
-{% if error %}<div class="alert">{{ error }}</div>{% endif %}
-<div class="alert" data-base64-error hidden></div>
-
+{% if error %}<div data-toast-error hidden>{{ error }}</div>{% endif %}
+<div data-base64-error hidden></div>
 <form class="tool-panel" method="post" data-base64-tool data-invalid-base64="{{ t('base64.invalid') }}" data-invalid-utf8="{{ t('base64.invalid_utf8') }}">
   <div class="split">
     <label>
       {{ t("base64.source") }}
-      <textarea class="delimiter-textarea" name="text" rows="14" data-desktop-rows="14" data-mobile-rows="7" spellcheck="false" data-base64-source>{{ form.text }}</textarea>
+      <span class="line-numbered-textarea">
+        <span class="line-number-gutter" data-line-numbers-for="base64-source"></span>
+        <textarea class="delimiter-textarea" name="text" rows="14" data-desktop-rows="14" data-mobile-rows="7" spellcheck="false" data-base64-source data-line-numbers-target="base64-source">{{ form.text }}</textarea>
+      </span>
     </label>
     <label>
       {{ t("common.result") }}
-      <textarea class="delimiter-textarea" rows="14" data-desktop-rows="14" data-mobile-rows="7" spellcheck="false" readonly data-base64-result>{{ result }}</textarea>
+      <span class="line-numbered-textarea">
+        <span class="line-number-gutter" data-line-numbers-for="base64-result"></span>
+        <textarea class="delimiter-textarea" rows="14" data-desktop-rows="14" data-mobile-rows="7" spellcheck="false" readonly data-base64-result data-line-numbers-target="base64-result">{{ result }}</textarea>
+      </span>
     </label>
   </div>
   <div class="mode-grid">

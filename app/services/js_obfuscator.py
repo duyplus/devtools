@@ -4,7 +4,10 @@ import re
 
 
 class JavascriptToolError(ValueError):
-    pass
+    def __init__(self, key):
+        self.key = key
+        self.params = {}
+        super().__init__(key)
 
 
 _APP_V1_RE = re.compile(
@@ -70,7 +73,7 @@ def deobfuscate_javascript(source):
     if decoded != source:
         return decoded
 
-    raise JavascriptToolError("No supported obfuscation pattern found.")
+    raise JavascriptToolError("javascript.error.pattern")
 
 
 def _normalize_options(options):
@@ -91,7 +94,7 @@ def _normalize_options(options):
 
     encoding = normalized.get("string_array_encoding") or "none"
     if encoding not in {"none", "base64", "rc4"}:
-        raise JavascriptToolError("Unsupported string array encoding.")
+        raise JavascriptToolError("javascript.error.encoding")
     normalized["string_array_encoding"] = encoding
     normalized["split_strings_chunk_length"] = _positive_int(
         normalized.get("split_strings_chunk_length"),
@@ -173,12 +176,12 @@ def _decode_v2_wrapper(source):
         key = _V2_KEY_RE.search(source)
         decoded = _rc4(decoded, (key.group("key") if key else "devtools").encode("utf-8"))
     elif encoding != "none":
-        raise JavascriptToolError("Unsupported string array encoding.")
+        raise JavascriptToolError("javascript.error.encoding")
 
     try:
         return decoded.decode("utf-8")
     except UnicodeDecodeError as exc:
-        raise JavascriptToolError("Decoded payload is not valid UTF-8 text.") from exc
+        raise JavascriptToolError("javascript.error.invalid_utf8") from exc
 
 
 def _extract_v2_payload(source):
@@ -190,7 +193,7 @@ def _extract_v2_payload(source):
     if array:
         return "".join(re.findall(r'"([^"]*)"', array.group("items")))
 
-    raise JavascriptToolError("No supported obfuscation pattern found.")
+    raise JavascriptToolError("javascript.error.pattern")
 
 
 def _decode_known_base64_wrapper(source):
@@ -206,7 +209,7 @@ def _decode_base64_bytes(value):
     try:
         return base64.b64decode(normalized.encode("ascii"), validate=True)
     except (UnicodeEncodeError, binascii.Error) as exc:
-        raise JavascriptToolError("Invalid Base64 payload.") from exc
+        raise JavascriptToolError("javascript.error.invalid_base64") from exc
 
 
 def _decode_base64_text(value):
@@ -214,7 +217,7 @@ def _decode_base64_text(value):
     try:
         return decoded.decode("utf-8")
     except UnicodeDecodeError as exc:
-        raise JavascriptToolError("Decoded payload is not valid UTF-8 text.") from exc
+        raise JavascriptToolError("javascript.error.invalid_utf8") from exc
 
 
 def _decode_js_escapes(source):

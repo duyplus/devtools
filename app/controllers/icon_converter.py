@@ -1,5 +1,6 @@
-from flask import Blueprint, render_template, request, send_file
+from flask import Blueprint, g, render_template, request, send_file
 
+from app.i18n import translate_error
 from app.services.icon_converter import IconError, generate_favicon_pack, generate_ico
 
 bp = Blueprint("icon_converter", __name__, url_prefix="/tools/icon-converter")
@@ -27,7 +28,7 @@ def index():
         try:
             upload = request.files.get("image")
             if upload is None or upload.filename == "":
-                raise IconError("Choose an image file.")
+                raise IconError("icons.error.file_required")
 
             image_bytes = upload.read()
             if form["mode"] == "ico":
@@ -47,7 +48,7 @@ def index():
                 download_name="favicon-pack.zip",
             )
         except (IconError, ValueError) as exc:
-            error = str(exc)
+            error = translate_error(g.lang, exc)
 
     return render_template(
         "tools/icon-converter.html",

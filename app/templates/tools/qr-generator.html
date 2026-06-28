@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+{% block title %}{{ t("tool.qr.name") }}{% endblock %}
+{% block content %}
+<header class="page-head">
+  <div>
+    <h2>{{ t("tool.qr.name") }}</h2>
+    <p class="page-description">{{ t("tool.qr.description") }}</p>
+  </div>
+</header>
+<div data-qr-error data-toast-error hidden>{{ error }}</div>
+<form class="tool-panel" method="post" enctype="multipart/form-data" data-qr-tool data-qr-success="{{ t('qr.generated') }}">
+  <div class="split">
+    <div class="option-panel">
+      <fieldset>
+        <legend>{{ t("qr.choose_type") }}</legend>
+        <div class="qr-type-grid">
+          {% for type in qr_types %}
+          <label class="choice">
+            <input type="radio" name="type" value="{{ type }}" {% if form.type == type %}checked{% endif %}>
+            <span><i data-lucide="{{ {
+              'url': 'link',
+              'text': 'align-left',
+              'email': 'mail',
+              'phone': 'phone',
+              'sms': 'message-square',
+              'wifi': 'wifi',
+              'vcard': 'contact',
+              'location': 'map-pin',
+              'event': 'calendar'
+            }[type] }}"></i><strong>{{ t("qr.type." ~ type) }}</strong></span>
+          </label>
+          {% endfor %}
+        </div>
+      </fieldset>
+      <div class="qr-fields {% if form.type == 'url' %}is-active{% endif %}" data-qr-fields="url" {% if form.type != "url" %}hidden{% endif %}>
+        <label>{{ t("qr.url") }}<input name="url" type="url" value="{{ form.url }}" placeholder="{{ t('qr.placeholder.url') }}"></label>
+      </div>
+      <div class="qr-fields {% if form.type == 'text' %}is-active{% endif %}" data-qr-fields="text" {% if form.type != "text" %}hidden{% endif %}>
+        <label>{{ t("qr.text") }}<textarea name="text" rows="5" placeholder="{{ t('qr.placeholder.text') }}">{{ form.text }}</textarea></label>
+      </div>
+      <div class="qr-fields controls qr-two-column-fields {% if form.type == 'email' %}is-active{% endif %}" data-qr-fields="email" {% if form.type != "email" %}hidden{% endif %}>
+        <label>{{ t("qr.email") }}<input name="email_address" type="email" value="{{ form.email_address }}" placeholder="{{ t('qr.placeholder.email') }}"></label>
+        <label>{{ t("qr.subject") }}<input name="email_subject" value="{{ form.email_subject }}" placeholder="{{ t('qr.placeholder.email_subject') }}"></label>
+        <label class="qr-field-wide">{{ t("qr.body") }}<textarea name="email_body" rows="4" placeholder="{{ t('qr.placeholder.email_body') }}">{{ form.email_body }}</textarea></label>
+      </div>
+      <div class="qr-fields {% if form.type == 'phone' %}is-active{% endif %}" data-qr-fields="phone" {% if form.type != "phone" %}hidden{% endif %}>
+        <label>{{ t("qr.phone") }}<input name="phone" type="tel" value="{{ form.phone }}" placeholder="{{ t('qr.placeholder.phone') }}"></label>
+      </div>
+      <div class="qr-fields controls {% if form.type == 'sms' %}is-active{% endif %}" data-qr-fields="sms" {% if form.type != "sms" %}hidden{% endif %}>
+        <label class="qr-field-wide">{{ t("qr.phone") }}<input name="sms_phone" type="tel" value="{{ form.sms_phone }}" placeholder="{{ t('qr.placeholder.phone') }}"></label>
+        <label class="qr-field-wide">{{ t("qr.message") }}<textarea name="sms_message" rows="4" placeholder="{{ t('qr.placeholder.message') }}">{{ form.sms_message }}</textarea></label>
+      </div>
+      <div class="qr-fields controls {% if form.type == 'wifi' %}is-active{% endif %}" data-qr-fields="wifi" {% if form.type != "wifi" %}hidden{% endif %}>
+        <label>{{ t("qr.wifi_ssid") }}<input name="wifi_ssid" value="{{ form.wifi_ssid }}" placeholder="{{ t('qr.placeholder.network_name') }}"></label>
+        <label>{{ t("qr.wifi_password") }}<input name="wifi_password" value="{{ form.wifi_password }}" placeholder="{{ t('qr.placeholder.password') }}"></label>
+        <label>{{ t("qr.wifi_auth") }}
+          <select name="wifi_auth">
+            {% for auth in ("WPA", "WEP", "nopass") %}
+            <option value="{{ auth }}" {% if form.wifi_auth == auth %}selected{% endif %}>{{ auth }}</option>
+            {% endfor %}
+          </select>
+        </label>
+        <label class="switch-row"><input type="checkbox" name="wifi_hidden" {% if form.wifi_hidden %}checked{% endif %}><span class="switch-control"></span><strong>{{ t("qr.wifi_hidden") }}</strong></label>
+      </div>
+      <div class="qr-fields controls qr-vcard-fields {% if form.type == 'vcard' %}is-active{% endif %}" data-qr-fields="vcard" {% if form.type != "vcard" %}hidden{% endif %}>
+        <label>{{ t("qr.name") }}<input name="vcard_name" value="{{ form.vcard_name }}" placeholder="{{ t('qr.placeholder.full_name') }}"></label>
+        <label>{{ t("qr.company") }}<input name="vcard_org" value="{{ form.vcard_org }}" placeholder="{{ t('qr.company') }}"></label>
+        <label>{{ t("qr.phone") }}<input name="vcard_phone" type="tel" value="{{ form.vcard_phone }}" placeholder="{{ t('qr.placeholder.phone') }}"></label>
+        <label class="qr-field-half">{{ t("qr.email") }}<input name="vcard_email" type="email" value="{{ form.vcard_email }}" placeholder="{{ t('qr.placeholder.vcard_email') }}"></label>
+        <label class="qr-field-half">{{ t("qr.url") }}<input name="vcard_url" value="{{ form.vcard_url }}" placeholder="{{ t('qr.placeholder.website') }}"></label>
+      </div>
+      <div class="qr-fields controls {% if form.type == 'location' %}is-active{% endif %}" data-qr-fields="location" {% if form.type != "location" %}hidden{% endif %}>
+        <label>{{ t("qr.latitude") }}<input name="latitude" value="{{ form.latitude }}" placeholder="10.7769"></label>
+        <label>{{ t("qr.longitude") }}<input name="longitude" value="{{ form.longitude }}" placeholder="106.7009"></label>
+      </div>
+      <div class="qr-fields controls {% if form.type == 'event' %}is-active{% endif %}" data-qr-fields="event" {% if form.type != "event" %}hidden{% endif %}>
+        <label>{{ t("qr.event_title") }}<input name="event_title" value="{{ form.event_title }}" placeholder="{{ t('qr.placeholder.event_title') }}"></label>
+        <label>{{ t("qr.event_start") }}<input name="event_start" type="datetime-local" value="{{ form.event_start }}"></label>
+        <label>{{ t("qr.event_end") }}<input name="event_end" type="datetime-local" value="{{ form.event_end }}"></label>
+        <label class="qr-field-wide">{{ t("qr.event_location") }}<input name="event_location" value="{{ form.event_location }}" placeholder="{{ t('qr.placeholder.event_location') }}"></label>
+        <label class="qr-field-wide">{{ t("qr.event_description") }}<textarea name="event_description" rows="4" placeholder="{{ t('qr.placeholder.event_description') }}">{{ form.event_description }}</textarea></label>
+      </div>
+      <fieldset>
+        <legend>{{ t("qr.customize") }}</legend>
+        <div class="qr-customize-grid" data-qr-style-controls>
+          <label class="qr-color-field">{{ t("qr.foreground") }}
+            <span>
+              <input type="color" value="{{ form.foreground[0:7] }}" data-qr-color-picker="foreground">
+              <input name="foreground" value="{{ form.foreground }}" data-qr-color-value="foreground">
+            </span>
+          </label>
+          <label class="qr-color-field">{{ t("qr.background") }}
+            <span>
+              <input type="color" value="{{ form.background[0:7] }}" data-qr-color-picker="background">
+              <input name="background" value="{{ form.background }}" data-qr-color-value="background">
+            </span>
+          </label>
+          <label class="qr-range-field"><span>{{ t("qr.size") }}: <strong data-qr-range-output="size">{{ form.size }}</strong>px</span><input name="size" type="range" min="100" max="550" step="50" value="{{ form.size }}" data-qr-range="size"></label>
+          <label class="qr-range-field"><span>{{ t("qr.margin") }}: <strong data-qr-range-output="margin">{{ form.margin }}</strong></span><input name="margin" type="range" min="0" max="12" value="{{ form.margin }}" data-qr-range="margin"></label>
+          <label class="qr-field-wide">{{ t("qr.error_correction") }}
+            <select name="error_correction">
+              {% for level, label in (("L", "L (~7%)"), ("M", "M (~15%)"), ("Q", "Q (~25%)"), ("H", "H (~30%)")) %}
+              <option value="{{ level }}" {% if form.error_correction == level %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+          </label>
+          <label class="switch-row qr-field-wide qr-frame-toggle"><input type="checkbox" name="frame_text_enabled" {% if form.frame_text_enabled %}checked{% endif %} data-qr-frame-toggle><span class="switch-control"></span><strong>{{ t("qr.frame_text") }}</strong></label>
+          <label class="qr-field-wide" data-qr-frame-text><input name="frame_text" value="{{ form.frame_text }}" placeholder="{{ t('qr.placeholder.frame_text') }}"></label>
+          <label class="file-field qr-field-wide">{{ t("qr.logo") }}<input type="file" name="logo" accept="image/*" data-file-input></label>
+          <button class="button-link qr-reset-button qr-field-wide" type="button" data-qr-reset-defaults><i data-lucide="rotate-ccw"></i>{{ t("qr.reset_defaults") }}</button>
+        </div>
+      </fieldset>
+    </div>
+    <div class="qr-preview">
+      <span>{{ t("common.result") }}</span>
+      {% if result %}
+      <img src="data:image/png;base64,{{ result.png }}" alt="{{ t('tool.qr.name') }}" style="--qr-preview-size: {{ form.size }}px" data-copy-image>
+      <div class="qr-download-actions">
+        <a class="button-link" href="data:image/png;base64,{{ result.png }}" download="qr-code.png"><i data-lucide="download"></i>{{ t("qr.download_png") }}</a>
+        <a class="button-link" href="data:image/jpeg;base64,{{ result.jpg }}" download="qr-code.jpg"><i data-lucide="download"></i>{{ t("qr.download_jpg") }}</a>
+        <a class="button-link" href="data:image/svg+xml;base64,{{ result.svg }}" download="qr-code.svg"><i data-lucide="download"></i>{{ t("qr.download_svg") }}</a>
+        <button class="button-link" type="button" data-copy-image-button data-copy-success="{{ t('qr.copy_done') }}"><i data-lucide="copy"></i>{{ t("qr.copy_image") }}</button>
+      </div>
+      {% else %}
+      <div class="qr-empty"><i data-lucide="qr-code"></i></div>
+      {% endif %}
+    </div>
+  </div>
+</form>
+{% endblock %}

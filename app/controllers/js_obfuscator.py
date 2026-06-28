@@ -1,5 +1,6 @@
-from flask import Blueprint, jsonify, render_template, request
+from flask import Blueprint, g, jsonify, render_template, request
 
+from app.i18n import translate_error
 from app.services.js_obfuscator import (
     DEFAULT_OPTIONS,
     JavascriptToolError,
@@ -42,9 +43,9 @@ def _convert(form):
             return deobfuscate_javascript(text), ""
         if mode == "obfuscate":
             return obfuscate_javascript(text, form), ""
-        raise JavascriptToolError("Unsupported JavaScript mode.")
+        raise JavascriptToolError("javascript.error.mode")
     except JavascriptToolError as exc:
-        return "", str(exc)
+        return "", translate_error(g.lang, exc)
 
 
 def _form_options(form_data):

@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% block title %}{{ t("tool.text_diff.name") }}{% endblock %}
+{% block content %}
+<header class="page-head">
+  <div>
+    <h2>{{ t("tool.text_diff.name") }}</h2>
+    <p class="page-description">{{ t("tool.text_diff.description") }}</p>
+  </div>
+</header>
+<form class="tool-panel textdiff-tool" method="post" data-text-diff-tool>
+  
+  {% if result %}
+    <section class="textdiff-result" aria-label="{{ t('text_diff.diff') }}" data-text-diff-result>
+      <div class="textdiff-summary-row">
+        <div class="diff-stat diff-stat-delete">
+          <button type="button" class="diff-stat-button"><i data-lucide="minus-circle"></i>{{ result.deleted }} {{ t("text_diff.removals") }}</button>
+          <div class="diff-stat-popover">
+            <strong>{{ t("text_diff.lines") }}</strong>
+            <span>{{ t("text_diff.total") }} <b>{{ result.left_lines }}</b></span>
+            <span>{{ t("text_diff.removed") }} <b>-{{ "%.1f"|format((result.deleted / result.left_lines * 100) if result.left_lines else 0) }}% {{ result.deleted }}</b></span>
+            <hr>
+            <strong>{{ t("text_diff.characters") }}</strong>
+            <span>{{ t("text_diff.total") }} <b>{{ result.left_chars }}</b></span>
+            <span>{{ t("text_diff.removed") }} <b>-{{ "%.1f"|format((result.deleted_chars / result.left_chars * 100) if result.left_chars else 0) }}% {{ result.deleted_chars }}</b></span>
+          </div>
+        </div>
+        <span class="textdiff-total-lines">{{ result.left_lines }} {{ t("text_diff.lines_lower") }}</span>
+        <button type="button" class="textdiff-copy-all" data-copy-text-area="left_text">{{ t("text_diff.copy") }}</button>
+        <button type="button" class="textdiff-swap-mark" data-textdiff-swap aria-label="{{ t('common.reverse') }}">
+          <i data-lucide="arrow-right-left"></i>
+        </button>
+        <div class="diff-stat diff-stat-add">
+          <button type="button" class="diff-stat-button"><i data-lucide="plus-circle"></i>{{ result.added }} {{ t("text_diff.additions") }}</button>
+          <div class="diff-stat-popover">
+            <strong>{{ t("text_diff.lines") }}</strong>
+            <span>{{ t("text_diff.total") }} <b>{{ result.right_lines }}</b></span>
+            <span>{{ t("text_diff.added") }} <b>+{{ "%.1f"|format((result.added / result.right_lines * 100) if result.right_lines else 0) }}% {{ result.added }}</b></span>
+            <hr>
+            <strong>{{ t("text_diff.characters") }}</strong>
+            <span>{{ t("text_diff.total") }} <b>{{ result.right_chars }}</b></span>
+            <span>{{ t("text_diff.added") }} <b>+{{ "%.1f"|format((result.added_chars / result.right_chars * 100) if result.right_chars else 0) }}% {{ result.added_chars }}</b></span>
+          </div>
+        </div>
+        <span class="textdiff-total-lines">{{ result.right_lines }} {{ t("text_diff.lines_lower") }}</span>
+        <button type="button" class="textdiff-copy-all" data-copy-text-area="right_text">{{ t("text_diff.copy") }}</button>
+      </div>
+      <div class="diff-view">
+        {% set ns = namespace(change=0) %}
+        {% for hunk in result.hunks %}
+          {% if hunk.kind != "equal" %}
+            {% set ns.change = ns.change + 1 %}
+          {% endif %}
+          <section class="diff-hunk diff-hunk-{{ hunk.kind }}" data-text-diff-hunk data-change-index="{{ ns.change if hunk.kind != 'equal' else '' }}">
+            <textarea hidden data-merge-left>{{ hunk.left_text }}</textarea>
+            <textarea hidden data-merge-right>{{ hunk.right_text }}</textarea>
+            <div class="diff-grid">
+              {% for line in hunk.lines %}
+                <div class="diff-cell diff-left diff-line-{{ line.kind }}">
+                  <span class="diff-line-no">{{ line.left_no or "" }}</span>
+                  <pre>{{ line.left }}</pre>
+                </div>
+                <div class="diff-cell diff-right diff-line-{{ line.kind }}">
+                  <span class="diff-line-no">{{ line.right_no or "" }}</span>
+                  <pre>{{ line.right }}</pre>
+                </div>
+              {% endfor %}
+            </div>
+          </section>
+        {% endfor %}
+      </div>
+    </section>
+  {% endif %}
+  <div class="textdiff-inputs">
+    <section class="textdiff-input-pane">
+      <div class="textdiff-pane-head">
+        <strong>{{ t("text_diff.left") }}</strong>
+        <label class="textdiff-open-file">
+          <i data-lucide="upload"></i>
+          <span>{{ t("text_diff.open_file") }}</span>
+          <input type="file" accept=".txt,.csv,.json,.xml,.html,.css,.js,.ts,.md,.log,text/*" data-text-file-target="left_text">
+        </label>
+      </div>
+      <span class="line-numbered-textarea">
+        <span class="line-number-gutter" data-line-numbers-for="text-diff-left"></span>
+        <textarea class="delimiter-textarea" name="left_text" rows="14" data-desktop-rows="14" data-mobile-rows="7" spellcheck="false" data-line-numbers-target="text-diff-left">{{ form.left_text }}</textarea>
+      </span>
+    </section>
+    <section class="textdiff-input-pane">
+      <div class="textdiff-pane-head">
+        <strong>{{ t("text_diff.right") }}</strong>
+        <label class="textdiff-open-file">
+          <i data-lucide="upload"></i>
+          <span>{{ t("text_diff.open_file") }}</span>
+          <input type="file" accept=".txt,.csv,.json,.xml,.html,.css,.js,.ts,.md,.log,text/*" data-text-file-target="right_text">
+        </label>
+      </div>
+      <span class="line-numbered-textarea">
+        <span class="line-number-gutter" data-line-numbers-for="text-diff-right"></span>
+        <textarea class="delimiter-textarea" name="right_text" rows="14" data-desktop-rows="14" data-mobile-rows="7" spellcheck="false" data-line-numbers-target="text-diff-right">{{ form.right_text }}</textarea>
+      </span>
+    </section>
+  </div>
+  <div class="actions textdiff-actions">
+    <button type="submit"><i data-lucide="git-compare"></i>{{ t("text_diff.compare") }}</button>
+  </div>
+</form>
+{% endblock %}

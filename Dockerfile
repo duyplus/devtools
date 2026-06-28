@@ -12,6 +12,8 @@ COPY requirements.txt requirements.txt
 RUN pip3 install -r requirements.txt
 
 COPY . .
+ENV MINIFY_ASSETS=1 MINIFY_HTML=1
+RUN python scripts/minify_assets.py
 
 EXPOSE 8080
 

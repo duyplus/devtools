@@ -3,11 +3,10 @@
 {% block content %}
 <header class="page-head">
   <div>
-    <p class="eyebrow">{{ t("tool.percentage.category") }}</p>
     <h2>{{ t("tool.percentage.name") }}</h2>
+    <p class="page-description">{{ t("tool.percentage.description") }}</p>
   </div>
 </header>
-
 <form class="tool-panel narrow" data-percentage-calculator>
   <fieldset data-percentage-row="of">
     <div class="percentage-field-head">
@@ -22,14 +21,14 @@
       </button>
     </div>
     <div class="percentage-line">
-      <input data-percent-field="percent" inputmode="decimal">
+      <input data-percent-field="percent" inputmode="decimal" placeholder="20">
       <span>%</span>
       <span>{{ t("percentage.of_word") }}</span>
-      <input data-percent-field="value" inputmode="decimal">
+      <input data-percent-field="value" inputmode="decimal" placeholder="80">
       <span>?</span>
       <span class="percentage-spacer"></span>
       <span>=</span>
-      <input data-percent-result readonly>
+      <input data-percent-result placeholder="16" readonly>
     </div>
   </fieldset>
   <fieldset data-percentage-row="ratio">
@@ -45,13 +44,13 @@
       </button>
     </div>
     <div class="percentage-line">
-      <input data-percent-field="value" inputmode="decimal">
+      <input data-percent-field="value" inputmode="decimal" placeholder="20">
       <span>{{ t("percentage.is_what_percent") }}</span>
-      <input data-percent-field="base" inputmode="decimal">
+      <input data-percent-field="base" inputmode="decimal" placeholder="80">
       <span>?</span>
       <span class="percentage-spacer"></span>
       <span>=</span>
-      <input data-percent-result readonly>
+      <input data-percent-result placeholder="25" readonly>
       <span>%</span>
     </div>
   </fieldset>
@@ -63,23 +62,23 @@
         <span class="percentage-tooltip">
           <strong>{{ t("percentage.change_title") }}</strong>
           <span>{{ t("percentage.change_help") }}</span>
-          <code>80 × (1 + 100 / 10) = 88</code>
+          <code>80 × (1 + 10 / 100) = 88</code>
         </span>
       </button>
     </div>
     <div class="percentage-line">
-      <input data-percent-field="percent" inputmode="decimal">
+      <input data-percent-field="percent" inputmode="decimal" placeholder="10">
       <span>%</span>
       <select data-percent-field="direction">
         <option value="increase">{{ t("percentage.increase") }}</option>
         <option value="decrease">{{ t("percentage.decrease") }}</option>
       </select>
       <span>{{ t("percentage.of_word") }}</span>
-      <input data-percent-field="value" inputmode="decimal">
+      <input data-percent-field="value" inputmode="decimal" placeholder="80">
       <span>?</span>
       <span class="percentage-spacer"></span>
       <span>=</span>
-      <input data-percent-result readonly>
+      <input data-percent-result placeholder="88" readonly>
       <span>%</span>
     </div>
   </fieldset>
@@ -97,13 +96,13 @@
     </div>
     <div class="percentage-line">
       <span>{{ t("percentage.number") }}</span>
-      <input data-percent-field="value" inputmode="decimal">
+      <input data-percent-field="value" inputmode="decimal" placeholder="10">
       <span>{{ t("percentage.is") }}</span>
-      <input data-percent-field="percent" inputmode="decimal">
+      <input data-percent-field="percent" inputmode="decimal" placeholder="5">
       <span>%</span>
       <span class="percentage-spacer"></span>
       <span>{{ t("percentage.of_number") }}</span>
-      <input data-percent-result readonly>
+      <input data-percent-result placeholder="200" readonly>
     </div>
   </fieldset>
 </form>

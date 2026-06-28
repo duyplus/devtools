@@ -1,6 +1,7 @@
-from flask import Blueprint, render_template, request
+from flask import Blueprint, g, render_template, request
 
-from app.services.comma_delimiter import DelimiterOptions, convert_text
+from app.i18n import translate_error
+from app.services.comma_delimiter import DelimiterError, DelimiterOptions, convert_text
 
 bp = Blueprint("comma_delimiter", __name__, url_prefix="/tools/comma-delimiter")
 
@@ -51,10 +52,19 @@ def index():
                 quote=request.form.get("quote", "none"),
                 prefix=request.form.get("prefix", ""),
                 suffix=request.form.get("suffix", ""),
-                interval=int(interval_raw) if interval_raw else 0,
+                interval=_interval(interval_raw),
             )
             result = convert_text(source_text, options)
-        except ValueError as exc:
-            error = str(exc)
+        except (DelimiterError, ValueError) as exc:
+            error = translate_error(g.lang, exc)
 
     return render_template("tools/comma-delimiter.html", form=form, result=result, error=error)
+
+
+def _interval(value):
+    if not value:
+        return 0
+    try:
+        return int(value)
+    except ValueError as exc:
+        raise DelimiterError("delimiter.error.interval") from exc
