@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}{{ t("tool.ip_checker.name") }}{% endblock %}
+{% block content %}
+<header class="page-head">
+  <div>
+    <h2>{{ t("tool.ip_checker.name") }}</h2>
+    <p class="page-description">{{ t("tool.ip_checker.description") }}</p>
+  </div>
+</header>
+{% if error %}<div data-toast-error hidden>{{ error }}</div>{% endif %}
+<form class="ip-search" method="post" data-ip-checker>
+  <input name="target" placeholder="{{ client_ip or t('ip_checker.placeholder') }}" spellcheck="false" autocomplete="off">
+  <button type="submit"><i data-lucide="search"></i>{{ t("ip_checker.check") }}</button>
+</form>
+<p class="ip-help">{{ t("ip_checker.help") }}</p>
+{% if result %}
+  <section class="ip-card" aria-label="{{ t('ip_checker.result') }}">
+    <div class="ip-card-head">
+      <strong>{{ t("ip_checker.info_title") }}</strong>
+    </div>
+    <div class="ip-card-body">
+      <div class="ip-current">
+        <span>{{ t("ip_checker.address") }}</span>
+        <div class="ip-current-values">
+          <strong><small>{{ t("ip_checker.ipv4") }}</small><code class="ip-current-value">{{ result.display_ipv4 or "-" }}</code></strong>
+          <strong><small>{{ t("ip_checker.ipv6") }}</small><code class="ip-current-value">{{ result.display_ipv6 or "-" }}</code></strong>
+        </div>
+      </div>
+      <div class="ip-detail-grid">
+        <p>{{ t("ip_checker.region") }}: <strong>{{ result.geo.region or "-" }}</strong></p>
+        <p>{{ t("ip_checker.city") }}: <strong>{{ result.geo.city or "-" }}</strong></p>
+        <p>{{ t("ip_checker.country") }}: <strong>{{ result.geo.country or "-" }}</strong></p>
+        <p>{{ t("ip_checker.network") }}: <strong>{{ result.geo.isp or result.host }}</strong></p>
+        <p>{{ t("ip_checker.user_agent") }}: <code>{{ user_agent or "-" }}</code></p>
+        <p>{{ t("ip_checker.timezone") }}: <strong>{{ result.geo.timezone or "-" }}</strong></p>
+        <p>{{ t("ip_checker.coordinates") }}: <strong>{% if result.geo.latitude and result.geo.longitude %}{{ result.geo.latitude }}, {{ result.geo.longitude }}{% else %}-{% endif %}</strong></p>
+      </div>
+    </div>
+  </section>
+{% endif %}
+{% endblock %}

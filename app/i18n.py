@@ -588,11 +588,53 @@ MESSAGES = {
 
 MESSAGES["en"].update(
     {
+        "tool.ip_checker.name": "IP Checker",
+        "tool.ip_checker.description": "Check your IPv4, IPv6, domain, URL, location hints, and embedded IPv4 conversions.",
+        "tool.ip_checker.category": "Network",
+        "ip_checker.placeholder": "Enter IP, URL, or domain",
+        "ip_checker.check": "Check",
+        "ip_checker.help": "You can enter an IP address, URL, or domain to check.",
+        "ip_checker.result": "IP result",
+        "ip_checker.info_title": "Your IP address and location information:",
+        "ip_checker.address": "IP address",
+        "ip_checker.ipv4": "IPv4",
+        "ip_checker.ipv6": "IPv6",
+        "ip_checker.region": "Region",
+        "ip_checker.city": "City",
+        "ip_checker.country": "Country",
+        "ip_checker.network": "Network",
+        "ip_checker.user_agent": "User Agent",
+        "ip_checker.timezone": "Timezone",
+        "ip_checker.coordinates": "Coordinates",
+        "ip_checker.error.required": "Enter an IP, URL, or domain.",
+        "ip_checker.error.invalid": "Input is not a valid IP, URL, or domain.",
+        "ip_checker.error.resolve": "Could not resolve this domain or URL.",
     }
 )
 
 MESSAGES["vi"].update(
     {
+        "tool.ip_checker.name": "Kiểm tra IP",
+        "tool.ip_checker.description": "Kiểm tra IPv4, IPv6, domain, URL, gợi ý vị trí và chuyển đổi IPv4 nhúng.",
+        "tool.ip_checker.category": "Mạng",
+        "ip_checker.placeholder": "Nhập IP, URL hoặc domain",
+        "ip_checker.check": "Kiểm tra",
+        "ip_checker.help": "Bạn có thể nhập địa chỉ IP, URL hoặc domain để kiểm tra.",
+        "ip_checker.result": "Kết quả IP",
+        "ip_checker.info_title": "Thông tin địa chỉ IP và vị trí của bạn:",
+        "ip_checker.address": "Địa chỉ IP",
+        "ip_checker.ipv4": "IPv4",
+        "ip_checker.ipv6": "IPv6",
+        "ip_checker.region": "Khu vực",
+        "ip_checker.city": "Thành phố",
+        "ip_checker.country": "Quốc gia",
+        "ip_checker.network": "Network",
+        "ip_checker.user_agent": "User Agent",
+        "ip_checker.timezone": "Timezone",
+        "ip_checker.coordinates": "Coordinates",
+        "ip_checker.error.required": "Nhập IP, URL hoặc domain.",
+        "ip_checker.error.invalid": "Dữ liệu nhập không phải IP, URL hoặc domain hợp lệ.",
+        "ip_checker.error.resolve": "Không phân giải được domain hoặc URL này.",
     }
 )
 

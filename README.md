@@ -192,3 +192,4 @@ Dashboard và sidebar đọc danh sách tool từ registry.
 - Các tool xử lý ảnh sẽ reject ảnh quá lớn/decompression bomb.
 - Theme sáng/tối lưu bằng `localStorage`.
 - QR frame text dùng font Quicksand từ `app/static/fonts/` khi có sẵn.
+- IP Checker: check IPv4, IPv6, domain, URL, and embedded IPv4 conversion from IPv6 forms.

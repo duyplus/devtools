@@ -86,6 +86,15 @@ TOOLS = sorted(
             icon="qr-code",
             order=70,
         ),
+        ToolDefinition(
+            id="ip_checker",
+            name="IP Checker",
+            description="Check IPv4, IPv6, domain, URL, and embedded IPv4 conversions.",
+            category="Network",
+            endpoint="ip_checker.index",
+            icon="globe-2",
+            order=80,
+        ),
     ),
     key=lambda tool: tool.order,
 )

@@ -31,6 +31,7 @@ def create_app(test_config=None):
     from app.controllers.base64_converter import bp as base64_bp
     from app.controllers.comma_delimiter import bp as delimiter_bp
     from app.controllers.icon_converter import bp as icons_bp
+    from app.controllers.ip_checker import bp as ip_checker_bp
     from app.controllers.js_obfuscator import bp as javascript_bp
     from app.controllers.password_generator import bp as password_bp
     from app.controllers.percentage_calculator import bp as percentage_bp
@@ -46,6 +47,7 @@ def create_app(test_config=None):
     app.register_blueprint(javascript_bp)
     app.register_blueprint(password_bp)
     app.register_blueprint(qr_bp)
+    app.register_blueprint(ip_checker_bp)
 
     @app.before_request
     def load_language():

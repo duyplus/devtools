@@ -1757,6 +1757,118 @@ button.secondary:hover {
   line-height: 1.15;
 }
 
+.ip-search {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 112px;
+  gap: 0;
+  max-width: 980px;
+}
+
+.ip-search input {
+  border-radius: 8px 0 0 8px;
+  font-size: 18px;
+  height: 48px;
+}
+
+.ip-search button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 48px;
+  max-width: none;
+  padding: 0 16px;
+  border-radius: 0 8px 8px 0;
+}
+
+.ip-help {
+  margin: 8px 0 24px;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.ip-card {
+  overflow: hidden;
+  max-width: 980px;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow: var(--shadow-soft);
+}
+
+.ip-card-head {
+  padding: 13px 18px;
+  border-bottom: 1px solid var(--line);
+  background: var(--field-readonly-bg);
+  font-size: 16px;
+}
+
+.ip-card-body {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+}
+
+.ip-card h3 {
+  margin: 0;
+  color: var(--primary);
+  font-size: 16px;
+}
+
+.ip-current {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  font-size: 17px;
+  font-weight: 800;
+}
+
+.ip-current>span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.ip-current-values {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.ip-current strong {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-soft);
+  padding: 10px 12px;
+  color: #f43f5e;
+  overflow-wrap: anywhere;
+}
+
+.ip-current small {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.ip-detail-grid {
+  display: grid;
+  gap: 10px;
+}
+
+.ip-detail-grid code {
+  color: #f43f5e;
+  overflow-wrap: anywhere;
+}
+
+.ip-detail-grid p {
+  margin: 0;
+  font-size: 16px;
+}
+
 .percentage-field-head {
   display: flex;
   align-items: center;
@@ -2140,8 +2252,16 @@ button.secondary:hover {
     padding: 18px;
   }
 
-  .controls, .controls.two, .mode-grid, .checks.columns, .qr-customize-grid {
+  .controls, .controls.two, .mode-grid, .checks.columns, .qr-customize-grid, .ip-current-values {
     grid-template-columns: 1fr;
+  }
+
+  .ip-search {
+    grid-template-columns: 1fr;
+  }
+
+  .ip-search input, .ip-search button {
+    border-radius: 8px;
   }
 
   .qr-vcard-fields.controls {
