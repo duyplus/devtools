@@ -293,7 +293,7 @@ def _dib_8bit(image):
 
 
 def _clean_sizes(sizes):
-    cleaned = sorted({int(size) for size in sizes if int(size) in ICO_SIZES})
+    cleaned = sorted({int(size) for size in sizes if int(size) in ICO_SIZES}, reverse=True)
     if not cleaned:
         raise IconError("icons.error.size_required")
     return cleaned
