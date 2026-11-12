@@ -1,6 +1,6 @@
 # DevTools
 
-DevTools là ứng dụng Flask gom các công cụ nhỏ để xử lý văn bản, mã nguồn, hình ảnh, QR, phần trăm và mật khẩu. Ứng dụng không dùng database, có thể chạy local, Docker, Fly.io hoặc cPanel Passenger.
+DevTools là ứng dụng Flask gom các công cụ nhỏ để xử lý văn bản, mã nguồn, hình ảnh, QR, phần trăm và mật khẩu. Ứng dụng không dùng database, có thể chạy local, Docker, Vercel hoặc cPanel Passenger.
 
 ## Công cụ
 
@@ -121,13 +121,12 @@ http://127.0.0.1:8080
 
 Docker build sẽ chạy `python scripts/minify_assets.py` và bật env minify.
 
-## Fly.io
+## Vercel
 
-Repo có sẵn `fly.toml`.
+Repo dùng cấu hình zero-config của Vercel thông qua `wsgi.py`, `requirements.txt` và `.python-version` (`3.12`).
 
-```powershell
-fly deploy
-```
+1. Import repo vào Vercel (Application Preset: **Flask**, Root Directory: `./`).
+2. Giữ nguyên Build/Install settings mặc định và bấm **Deploy** (hoặc chạy `vercel --prod` nếu dùng Vercel CLI).
 
 Health check:
 
@@ -159,8 +158,8 @@ scripts/
 tests/               Route tests và service tests
 wsgi.py              Entry point Flask/Gunicorn
 passenger_wsgi.py    Entry point cPanel Passenger
+.python-version      Phiên bản Python cho Vercel
 Dockerfile           Docker image
-fly.toml             Cấu hình Fly.io
 Procfile             Web process command
 runtime.txt          Gợi ý Python runtime
 ```

@@ -4,8 +4,6 @@ ARG PYTHON_VERSION=3.12.4
 
 FROM python:${PYTHON_VERSION}-slim
 
-LABEL fly_launch_runtime="flask"
-
 WORKDIR /code
 
 COPY requirements.txt requirements.txt
