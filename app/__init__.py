@@ -1,3 +1,4 @@
+from functools import lru_cache
 import os
 import re
 import secrets
@@ -5,6 +6,7 @@ from pathlib import Path
 
 from flask import Flask, g, request, url_for
 from werkzeug.exceptions import RequestEntityTooLarge
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 from app.i18n import LANGUAGES, normalize_language, translate
 
@@ -15,8 +17,9 @@ INTER_TAG_WHITESPACE_RE = re.compile(r">\s+<")
 
 def create_app(test_config=None):
     app = Flask(__name__)
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
     app.config.from_mapping(
-        MAX_CONTENT_LENGTH=8 * 1024 * 1024,
+        MAX_CONTENT_LENGTH=4 * 1024 * 1024,
         SECRET_KEY=os.environ.get("SECRET_KEY") or secrets.token_hex(32),
         SESSION_COOKIE_HTTPONLY=True,
         SESSION_COOKIE_SAMESITE="Lax",
@@ -73,17 +76,21 @@ def create_app(test_config=None):
             response.set_data(INTER_TAG_WHITESPACE_RE.sub("><", html).strip())
         return response
 
+    from app.tools.registry import TOOLS
+
+    @lru_cache(maxsize=16)
+    def _resolve_static_asset(filename, minify_assets):
+        if minify_assets:
+            path = Path(app.static_folder) / filename
+            minified = path.with_name(f"{path.stem}.min{path.suffix}")
+            if minified.exists():
+                return str(Path(filename).with_name(minified.name)).replace("\\", "/")
+        return filename
+
     @app.context_processor
     def inject_tools():
-        from app.tools.registry import TOOLS
-
         def static_asset(filename):
-            if app.config["MINIFY_ASSETS"]:
-                path = Path(app.static_folder) / filename
-                minified = path.with_name(f"{path.stem}.min{path.suffix}")
-                if minified.exists():
-                    return str(Path(filename).with_name(minified.name)).replace("\\", "/")
-            return filename
+            return _resolve_static_asset(filename, app.config["MINIFY_ASSETS"])
 
         def language_url(language):
             endpoint = request.endpoint or "dashboard.index"

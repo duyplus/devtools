@@ -171,7 +171,10 @@ def _decode_v2_wrapper(source):
     encoding = marker.group("encoding")
 
     if encoding == "base64":
-        decoded = _decode_base64_bytes(decoded.decode("ascii"))
+        try:
+            decoded = _decode_base64_bytes(decoded.decode("ascii"))
+        except UnicodeDecodeError as exc:
+            raise JavascriptToolError("javascript.error.invalid_base64") from exc
     elif encoding == "rc4":
         key = _V2_KEY_RE.search(source)
         decoded = _rc4(decoded, (key.group("key") if key else "devtools").encode("utf-8"))

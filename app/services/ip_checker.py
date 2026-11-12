@@ -1,3 +1,4 @@
+from concurrent.futures import ThreadPoolExecutor
 import ipaddress
 import json
 import socket
@@ -141,10 +142,13 @@ def _is_ip(value):
 
 
 def lookup_public_ips():
-    return {
-        "ipv4": _lookup_public_ip("https://api.ipify.org", 4),
-        "ipv6": _lookup_public_ip("https://ipv6.icanhazip.com", 6),
-    }
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        ipv4_future = executor.submit(_lookup_public_ip, "https://api.ipify.org", 4)
+        ipv6_future = executor.submit(_lookup_public_ip, "https://ipv6.icanhazip.com", 6)
+        return {
+            "ipv4": ipv4_future.result(),
+            "ipv6": ipv6_future.result(),
+        }
 
 
 def _lookup_public_ip(url, version):

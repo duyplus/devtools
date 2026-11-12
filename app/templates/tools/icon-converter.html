@@ -38,7 +38,7 @@
   <fieldset id="pack-options" {% if form.mode=="ico" %}hidden{% endif %}>
     <legend>{{ t("icons.options") }}</legend>
     <div class="checks">
-      <label><input type="checkbox" name="keep_ratio" value="1" checked> {{ t("icons.keep_ratio") }}</label>
+      <label><input type="checkbox" name="keep_ratio" value="1" {% if form.keep_ratio or request.method == "GET" %}checked{% endif %}> {{ t("icons.keep_ratio") }}</label>
     </div>
   </fieldset>
   <fieldset id="ico-sizes" {% if form.mode !="ico" %}hidden{% endif %}>

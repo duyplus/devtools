@@ -28,6 +28,9 @@ def index():
 
     if request.method == "POST":
         form.update(request.form.to_dict())
+        form["trim"] = "on" if "trim" in request.form else ""
+        form["remove_blank"] = "on" if "remove_blank" in request.form else ""
+        form["dedupe"] = "on" if "dedupe" in request.form else ""
         source_text = request.form.get("text", "")
         direction = request.form.get("direction", "forward")
         input_delimiter = request.form.get("input_delimiter", "newline")

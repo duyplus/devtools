@@ -19,6 +19,7 @@ def index():
     if request.method == "POST":
         form.update(request.form.to_dict())
         form["wifi_hidden"] = "wifi_hidden" in request.form
+        form["frame_text_enabled"] = "frame_text_enabled" in request.form
         try:
             payload = build_qr_payload(form)
             logo = request.files.get("logo")

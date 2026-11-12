@@ -58,7 +58,7 @@ def _nonzero(value, label):
 
 
 def _fmt(value):
-    normalized = value.normalize()
-    if normalized == normalized.to_integral():
-        return str(normalized.quantize(Decimal("1")))
-    return format(normalized, "f").rstrip("0").rstrip(".")
+    if value == 0:
+        return "0"
+    text = format(value.normalize(), "f")
+    return text.rstrip("0").rstrip(".") if "." in text else text

@@ -1,5 +1,6 @@
 import base64
 import binascii
+import re
 
 
 class Base64Error(ValueError):
@@ -14,8 +15,9 @@ def encode_base64(text):
 
 
 def decode_base64(text):
+    normalized = re.sub(r"\s+", "", text)
     try:
-        decoded = base64.b64decode(text.encode("ascii"), validate=True)
+        decoded = base64.b64decode(normalized.encode("ascii"), validate=True)
     except (UnicodeEncodeError, binascii.Error) as exc:
         raise Base64Error("base64.error.invalid") from exc
 

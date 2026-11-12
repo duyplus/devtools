@@ -118,16 +118,23 @@ def generate_favicon_pack(image_bytes, keep_ratio=False):
             "ms-icon-310x310.png": 310
         }
         
+        png_cache = {}
+
+        def render_png(size):
+            if size not in png_cache:
+                resized = _resize_with_white_bg(base_img, size, keep_ratio)
+                img_bytes_io = BytesIO()
+                if size == 1024:
+                    resized_p = resized.convert('P', palette=Image.Palette.ADAPTIVE, colors=256)
+                    resized_p.save(img_bytes_io, format='PNG', optimize=True, compress_level=9)
+                else:
+                    resized.save(img_bytes_io, format='PNG', optimize=True)
+                png_cache[size] = img_bytes_io.getvalue()
+            return png_cache[size]
+
         # 1. Generate main folder images
         for filename, size in sizes.items():
-            resized = _resize_with_white_bg(base_img, size, keep_ratio)
-            img_bytes_io = BytesIO()
-            if size == 1024:
-                resized_p = resized.convert('P', palette=Image.Palette.ADAPTIVE, colors=256)
-                resized_p.save(img_bytes_io, format='PNG', optimize=True, compress_level=9)
-            else:
-                resized.save(img_bytes_io, format='PNG', optimize=True)
-            archive.writestr(filename, img_bytes_io.getvalue())
+            archive.writestr(filename, render_png(size))
             
         # 2. Generate favicon.ico (16x16)
         favicon_img = _resize_with_white_bg(base_img, 16, keep_ratio)
@@ -139,14 +146,7 @@ def generate_favicon_pack(image_bytes, keep_ratio=False):
         # 3. Generate apple icons folder (icons/)
         apple_sizes = [48, 72, 96, 120, 144, 152, 167, 180, 192, 1024]
         for size in apple_sizes:
-            resized = _resize_with_white_bg(base_img, size, keep_ratio)
-            img_bytes_io = BytesIO()
-            if size == 1024:
-                resized_p = resized.convert('P', palette=Image.Palette.ADAPTIVE, colors=256)
-                resized_p.save(img_bytes_io, format='PNG', optimize=True, compress_level=9)
-            else:
-                resized.save(img_bytes_io, format='PNG', optimize=True)
-            archive.writestr(f"icons/{size}x{size}.png", img_bytes_io.getvalue())
+            archive.writestr(f"icons/{size}x{size}.png", render_png(size))
             
         # 4. Generate manifest.json
         manifest = {

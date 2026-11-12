@@ -1,7 +1,7 @@
 from flask import Blueprint, current_app, g, render_template, request
 
 from app.i18n import translate_error
-from app.services.ip_checker import IpCheckError, check_ip_target, get_client_ip, lookup_public_ips
+from app.services.ip_checker import IpCheckError, _is_global_ip, check_ip_target, get_client_ip, lookup_public_ips
 
 bp = Blueprint("ip_checker", __name__, url_prefix="/tools/ip-checker")
 
@@ -9,9 +9,11 @@ bp = Blueprint("ip_checker", __name__, url_prefix="/tools/ip-checker")
 @bp.route("", methods=("GET", "POST"))
 def index():
     error = ""
-    public_ips = lookup_public_ips() if not current_app.config["TESTING"] else {"ipv4": "", "ipv6": ""}
-    client_ip = public_ips["ipv6"] or public_ips["ipv4"] or get_client_ip(request)
+    raw_client_ip = get_client_ip(request)
+    use_local_fallback = not current_app.config["TESTING"] and not _is_global_ip(raw_client_ip)
     submitted = request.method == "POST" and bool(request.form.get("target", "").strip())
+    public_ips = lookup_public_ips() if (not submitted and use_local_fallback) else {"ipv4": "", "ipv6": ""}
+    client_ip = public_ips["ipv6"] or public_ips["ipv4"] or raw_client_ip
     target = request.form.get("target", "").strip() if submitted else client_ip
     result = None
 

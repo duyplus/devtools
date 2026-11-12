@@ -1,3 +1,4 @@
+import base64
 from dataclasses import dataclass
 from html import escape
 from io import BytesIO
@@ -60,7 +61,7 @@ def build_qr_payload(form):
         hidden = "true" if form.get("wifi_hidden") else "false"
         return f"WIFI:T:{auth};S:{_wifi_escape(ssid)};P:{_wifi_escape(password)};H:{hidden};;"
     if qr_type == "vcard":
-        name = _required(form.get("vcard_name"), "qr.error.name_required")
+        name = _clean_line(_required(form.get("vcard_name"), "qr.error.name_required"))
         return "\n".join(
             line
             for line in (
@@ -68,10 +69,10 @@ def build_qr_payload(form):
                 "VERSION:3.0",
                 f"N:{name}",
                 f"FN:{name}",
-                _optional("ORG", form.get("vcard_org")),
-                _optional("TEL", form.get("vcard_phone")),
-                _optional("EMAIL", form.get("vcard_email")),
-                _optional("URL", form.get("vcard_url")),
+                _optional("ORG", _clean_line(form.get("vcard_org"))),
+                _optional("TEL", _clean_line(form.get("vcard_phone"))),
+                _optional("EMAIL", _clean_line(form.get("vcard_email"))),
+                _optional("URL", _clean_line(form.get("vcard_url"))),
                 "END:VCARD",
             )
             if line
@@ -81,7 +82,7 @@ def build_qr_payload(form):
         lng = _required(form.get("longitude"), "qr.error.longitude_required")
         return f"geo:{lat},{lng}"
     if qr_type == "event":
-        title = _required(form.get("event_title"), "qr.error.event_title_required")
+        title = _clean_line(_required(form.get("event_title"), "qr.error.event_title_required"))
         start = _required(form.get("event_start"), "qr.error.event_start_required")
         return "\n".join(
             line
@@ -92,8 +93,8 @@ def build_qr_payload(form):
                 f"SUMMARY:{title}",
                 f"DTSTART:{_ical_time(start)}",
                 _optional("DTEND", _ical_time(form.get("event_end"))),
-                _optional("LOCATION", form.get("event_location")),
-                _optional("DESCRIPTION", form.get("event_description")),
+                _optional("LOCATION", _clean_line(form.get("event_location"))),
+                _optional("DESCRIPTION", _clean_line(form.get("event_description"))),
                 "END:VEVENT",
                 "END:VCALENDAR",
             )
@@ -118,14 +119,15 @@ def generate_qr_outputs(payload, options=None, logo_bytes=None):
     qr.make(fit=True)
     image = qr.make_image(fill_color=_pil_color(foreground), back_color=_pil_color(background)).convert("RGBA")
     image = image.resize((size, size), Image.Resampling.NEAREST)
-    if logo_bytes:
-        image = _add_logo(image, logo_bytes)
+    prepared_logo = _prepare_logo(logo_bytes, size // 4) if logo_bytes else None
+    if prepared_logo:
+        image = _composite_logo(image, prepared_logo)
     if options.frame_text_enabled and options.frame_text.strip():
         image = _add_frame_text(image, options.frame_text.strip(), foreground, background)
     return {
         "png": _save_image(image, "PNG"),
         "jpg": _save_image(image.convert("RGB"), "JPEG"),
-        "svg": _qr_svg(qr, size, foreground, background, logo_bytes, options.frame_text if options.frame_text_enabled else ""),
+        "svg": _qr_svg(qr, size, foreground, background, prepared_logo, options.frame_text if options.frame_text_enabled else ""),
     }
 
 def generate_qr_png(payload, options=None, logo_bytes=None):
@@ -136,7 +138,7 @@ def _save_image(image, image_format):
     image.save(output, format=image_format)
     return output.getvalue()
 
-def _qr_svg(qr, size, foreground, background, logo_bytes=None, frame_text=""):
+def _qr_svg(qr, size, foreground, background, prepared_logo=None, frame_text=""):
     matrix = qr.get_matrix()
     dimension = len(matrix)
     frame_text = frame_text.strip()
@@ -153,10 +155,10 @@ def _qr_svg(qr, size, foreground, background, logo_bytes=None, frame_text=""):
         if value
     ]
     logo = ""
-    if logo_bytes:
+    if prepared_logo is not None:
         logo_size = dimension / 4
         logo_pos = padding + (dimension - logo_size) / 2
-        logo_data = _logo_png_data(logo_bytes)
+        logo_data = _logo_png_data(prepared_logo)
         logo = (
             f'<image href="data:image/png;base64,{logo_data}" x="{logo_pos}" y="{logo_pos}" '
             f'width="{logo_size}" height="{logo_size}" preserveAspectRatio="xMidYMid meet"/>'
@@ -178,21 +180,23 @@ def _qr_svg(qr, size, foreground, background, logo_bytes=None, frame_text=""):
     ).encode("utf-8")
 
 
-def _add_logo(image, logo_bytes):
+def _prepare_logo(logo_bytes, max_size):
     logo = _open_logo(logo_bytes)
-    max_size = image.size[0] // 4
     logo.thumbnail((max_size, max_size), Image.Resampling.LANCZOS)
-    logo = _white_backed_if_transparent(logo)
+    return _white_backed_if_transparent(logo)
+
+
+def _composite_logo(image, logo):
     x = (image.size[0] - logo.size[0]) // 2
     y = (image.size[1] - logo.size[1]) // 2
     image.alpha_composite(logo, (x, y))
     return image
 
-def _logo_png_data(logo_bytes):
-    logo = _white_backed_if_transparent(_open_logo(logo_bytes))
+
+def _logo_png_data(logo):
     output = BytesIO()
     logo.save(output, format="PNG")
-    return __import__("base64").b64encode(output.getvalue()).decode("ascii")
+    return base64.b64encode(output.getvalue()).decode("ascii")
 
 def _open_logo(logo_bytes):
     try:
@@ -248,6 +252,10 @@ def _required(value, key):
 def _optional(name, value):
     value = (value or "").strip()
     return f"{name}:{value}" if value else ""
+
+
+def _clean_line(value):
+    return " ".join((value or "").replace("\r", " ").replace("\n", " ").split())
 
 
 def _wifi_escape(value):
