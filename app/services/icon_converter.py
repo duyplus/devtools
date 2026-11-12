@@ -266,7 +266,7 @@ def _dib_32bit(image):
             xor_data[di : di + 4] = bytes((b, g, r, a))
             alpha[src_y + x] = a
     and_data = _and_mask(alpha, w, h, threshold=1)
-    header = struct.pack("<IIIHHIIIIII", 40, w, h * 2, 1, 32, 0, len(xor_data) + len(and_data), 0, 0, 0, 0)
+    header = struct.pack("<IIIHHIIIIII", 40, w, h * 2, 1, 32, 0, 0, 0, 0, 0, 0)
     return header + bytes(xor_data) + and_data
 
 
@@ -288,7 +288,7 @@ def _dib_8bit(image):
         dst_y = y * row_bytes
         xor_data[dst_y : dst_y + w] = bytes(indices[src_y : src_y + w])
     and_data = _and_mask(alpha, w, h, threshold=128)
-    header = struct.pack("<IIIHHIIIIII", 40, w, h * 2, 1, 8, 0, len(xor_data) + len(and_data), 0, 0, 256, 0)
+    header = struct.pack("<IIIHHIIIIII", 40, w, h * 2, 1, 8, 0, 0, 0, 0, 256, 0)
     return header + bytes(palette) + bytes(xor_data) + and_data
 
 
