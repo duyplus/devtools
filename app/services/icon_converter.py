@@ -1,5 +1,6 @@
 import json
 from io import BytesIO
+import struct
 import warnings
 import zipfile
 
@@ -22,16 +23,33 @@ def generate_ico(image_bytes, sizes, bit_depth="32", keep_ratio=False):
     sizes = _clean_sizes(sizes)
     if bit_depth == "8" and 256 in sizes:
         raise IconError("icons.error.size_256_alpha")
-
-    image = _open_image(image_bytes)
-    base = _square_png(image, max(sizes), keep_ratio=keep_ratio)
-    if bit_depth == "8":
-        base = base.convert("RGB").convert("P", palette=Image.Palette.ADAPTIVE, colors=256)
-    elif bit_depth != "32":
+    if bit_depth not in {"8", "32"}:
         raise IconError("icons.error.bit_depth")
 
+    image = _open_image(image_bytes)
+    entries = []
+    for size in sizes:
+        frame = _square_png(image, size, keep_ratio=keep_ratio)
+        if size == 256:
+            data = _png_bytes(frame)
+            bpp = 32
+        elif bit_depth == "8":
+            data = _dib_8bit(frame)
+            bpp = 8
+        else:
+            data = _dib_32bit(frame)
+            bpp = 32
+        entries.append((size, bpp, data))
+
     output = BytesIO()
-    base.save(output, format="ICO", sizes=[(size, size) for size in sizes])
+    output.write(struct.pack("<HHH", 0, 1, len(entries)))
+    offset = 6 + 16 * len(entries)
+    for size, bpp, data in entries:
+        dim = 0 if size == 256 else size
+        output.write(struct.pack("<BBBBHHII", dim, dim, 0, 0, 1, bpp, len(data), offset))
+        offset += len(data)
+    for _, _, data in entries:
+        output.write(data)
     output.seek(0)
     return output
 
@@ -188,6 +206,7 @@ def _open_image(image_bytes):
             warnings.simplefilter("error", Image.DecompressionBombWarning)
             image = Image.open(BytesIO(image_bytes))
             image.load()
+            image = ImageOps.exif_transpose(image)
     except (
         OSError,
         UnidentifiedImageError,
@@ -218,6 +237,59 @@ def _png_bytes(image):
     output = BytesIO()
     image.save(output, format="PNG")
     return output.getvalue()
+
+
+def _and_mask(alpha_bytes, width, height, threshold=1):
+    row_bytes = ((width + 31) // 32) * 4
+    mask = bytearray(row_bytes * height)
+    for y in range(height):
+        src_row = (height - 1 - y) * width
+        dst_row = y * row_bytes
+        for x in range(width):
+            if alpha_bytes[src_row + x] < threshold:
+                mask[dst_row + (x >> 3)] |= 0x80 >> (x & 7)
+    return bytes(mask)
+
+
+def _dib_32bit(image):
+    w, h = image.size
+    rgba = image.convert("RGBA").tobytes()
+    xor_data = bytearray(w * h * 4)
+    alpha = bytearray(w * h)
+    for y in range(h):
+        src_y = (h - 1 - y) * w
+        dst_y = y * w
+        for x in range(w):
+            si = (src_y + x) * 4
+            di = (dst_y + x) * 4
+            r, g, b, a = rgba[si], rgba[si + 1], rgba[si + 2], rgba[si + 3]
+            xor_data[di : di + 4] = bytes((b, g, r, a))
+            alpha[src_y + x] = a
+    and_data = _and_mask(alpha, w, h, threshold=1)
+    header = struct.pack("<IIIHHIIIIII", 40, w, h * 2, 1, 32, 0, len(xor_data) + len(and_data), 0, 0, 0, 0)
+    return header + bytes(xor_data) + and_data
+
+
+def _dib_8bit(image):
+    w, h = image.size
+    rgba = image.convert("RGBA")
+    alpha = list(rgba.getchannel("A").getdata())
+    pal_img = rgba.convert("RGB").convert("P", palette=Image.Palette.ADAPTIVE, colors=256)
+    raw_pal = pal_img.getpalette() or []
+    palette = bytearray(256 * 4)
+    for i in range(min(256, len(raw_pal) // 3)):
+        r, g, b = raw_pal[i * 3 : i * 3 + 3]
+        palette[i * 4 : i * 4 + 4] = bytes((b, g, r, 0))
+    indices = list(pal_img.getdata())
+    row_bytes = ((w + 3) // 4) * 4
+    xor_data = bytearray(row_bytes * h)
+    for y in range(h):
+        src_y = (h - 1 - y) * w
+        dst_y = y * row_bytes
+        xor_data[dst_y : dst_y + w] = bytes(indices[src_y : src_y + w])
+    and_data = _and_mask(alpha, w, h, threshold=128)
+    header = struct.pack("<IIIHHIIIIII", 40, w, h * 2, 1, 8, 0, len(xor_data) + len(and_data), 0, 0, 256, 0)
+    return header + bytes(palette) + bytes(xor_data) + and_data
 
 
 def _clean_sizes(sizes):
