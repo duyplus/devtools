@@ -30,10 +30,7 @@ def generate_ico(image_bytes, sizes, bit_depth="32", keep_ratio=False):
     entries = []
     for size in sizes:
         frame = _square_png(image, size, keep_ratio=keep_ratio)
-        if size == 256:
-            data = _png_bytes(frame)
-            bpp = 32
-        elif bit_depth == "8":
+        if bit_depth == "8":
             data = _dib_8bit(frame)
             bpp = 8
         else:
@@ -293,7 +290,9 @@ def _dib_8bit(image):
 
 
 def _clean_sizes(sizes):
-    cleaned = sorted({int(size) for size in sizes if int(size) in ICO_SIZES}, reverse=True)
+    cleaned = sorted({int(size) for size in sizes if int(size) in ICO_SIZES})
     if not cleaned:
         raise IconError("icons.error.size_required")
+    if cleaned[-1] >= 128:
+        cleaned.reverse()
     return cleaned
